@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Vault - Compliance &amp; Documents</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#de5c1b",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#121212",
+                        "stealth-gray": "#1e1e1e",
+                        "glass-border": "rgba(255, 255, 255, 0.1)",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(40, 40, 40, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-folder {
+            background: linear-gradient(135deg, rgba(60, 60, 60, 0.4) 0%, rgba(30, 30, 30, 0.2) 100%);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header Section -->
+<header class="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10 px-4 py-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary">menu</span>
+</div>
+<div>
+<h1 class="text-lg font-bold tracking-tight">The Vault</h1>
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+<p class="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">AES-256 Encrypted</p>
+</div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="p-2 rounded-lg hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<main class="flex-1 px-4 py-6 max-w-2xl mx-auto w-full">
+<!-- Search & Filter -->
+<div class="mb-8">
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-500 text-sm">search</span>
+</div>
+<input class="w-full bg-stealth-gray/50 border border-glass-border rounded-lg py-3 pl-10 pr-4 focus:ring-1 focus:ring-primary focus:border-primary outline-none text-sm transition-all" placeholder="Search licenses, permits, IDs..." type="text"/>
+</div>
+<div class="flex gap-2 mt-4 overflow-x-auto pb-2 no-scrollbar">
+<button class="px-4 py-1.5 rounded-full bg-primary text-white text-xs font-medium whitespace-nowrap">All Docs</button>
+<button class="px-4 py-1.5 rounded-full bg-stealth-gray border border-glass-border text-slate-400 text-xs font-medium whitespace-nowrap hover:text-white transition-colors">Licenses</button>
+<button class="px-4 py-1.5 rounded-full bg-stealth-gray border border-glass-border text-slate-400 text-xs font-medium whitespace-nowrap hover:text-white transition-colors">Training</button>
+<button class="px-4 py-1.5 rounded-full bg-stealth-gray border border-glass-border text-slate-400 text-xs font-medium whitespace-nowrap hover:text-white transition-colors">IDs</button>
+</div>
+</div>
+<!-- Priority Alerts -->
+<section class="mb-8">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-sm font-bold uppercase tracking-wider text-slate-500">Critical Alerts</h2>
+<span class="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold">1 ACTION REQUIRED</span>
+</div>
+<div class="glass-card rounded-xl p-4 flex items-center gap-4 border-l-4 border-l-primary relative overflow-hidden">
+<div class="absolute top-0 right-0 p-2 opacity-10">
+<span class="material-symbols-outlined text-6xl">warning</span>
+</div>
+<div class="w-14 h-14 rounded-lg bg-black/40 border border-white/5 flex-shrink-0 overflow-hidden relative">
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"></div>
+<img class="w-full h-full object-cover" data-alt="Abstract gradient texture representing a document preview" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2y7XfnzM53LUZ6jLvPb_pzDJLVR1oW5gvil0oA4e_AzQsl1hjuHKTYAZqvI3SBEaQGm_k5kq7d0XZtV31CupRV_02D4nqsu4zqzltgKnbfRHUPyBMvUyEzICvdulhDy26wP7dJ5krypgAXZt8cqeYA1jPKCYR5evOXg5Ud5QJv5YUuqQwBeGCMVNkAxNXcI8sqVJUICs-wJ0NBPdSDBeQLCmeSUDmfPxMIcVy1nZW2UK5MvVAnEPkCOI4S5HUWp839ol7J8nS4Rg"/>
+</div>
+<div class="flex-1">
+<h3 class="font-bold text-sm">CLEET Private Security</h3>
+<p class="text-xs text-slate-400 mb-1">ID: #4492-BX-2024</p>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold text-primary tabular-nums">EXPIRING IN 14 DAYS</span>
+</div>
+</div>
+<button class="bg-primary text-white text-[10px] font-bold px-3 py-2 rounded uppercase tracking-wider">Renew</button>
+</div>
+</section>
+<!-- Secure Folders Grid -->
+<section class="mb-8">
+<h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Secure Folders</h2>
+<div class="grid grid-cols-2 gap-4">
+<div class="glass-folder rounded-xl p-4 flex flex-col gap-3 group cursor-pointer hover:border-primary/30 transition-all">
+<div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+<span class="material-symbols-outlined text-blue-400">folder_shared</span>
+</div>
+<div>
+<h3 class="text-sm font-bold">Legal IDs</h3>
+<p class="text-[10px] text-slate-500">4 Items • 12.4 MB</p>
+</div>
+</div>
+<div class="glass-folder rounded-xl p-4 flex flex-col gap-3 group cursor-pointer hover:border-primary/30 transition-all">
+<div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
+<span class="material-symbols-outlined text-orange-400">military_tech</span>
+</div>
+<div>
+<h3 class="text-sm font-bold">Firearm Permits</h3>
+<p class="text-[10px] text-slate-500">2 Items • 3.1 MB</p>
+</div>
+</div>
+<div class="glass-folder rounded-xl p-4 flex flex-col gap-3 group cursor-pointer hover:border-primary/30 transition-all">
+<div class="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+<span class="material-symbols-outlined text-emerald-400">verified_user</span>
+</div>
+<div>
+<h3 class="text-sm font-bold">Certifications</h3>
+<p class="text-[10px] text-slate-500">12 Items • 45.8 MB</p>
+</div>
+</div>
+<div class="glass-folder rounded-xl p-4 flex flex-col gap-3 group cursor-pointer hover:border-primary/30 transition-all">
+<div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+<span class="material-symbols-outlined text-purple-400">school</span>
+</div>
+<div>
+<h3 class="text-sm font-bold">Training</h3>
+<p class="text-[10px] text-slate-500">8 Items • 18.2 MB</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Document List -->
+<section>
+<h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Active Compliance</h2>
+<div class="space-y-3">
+<!-- License Card 1 -->
+<div class="glass-card rounded-xl p-3 flex items-center gap-3">
+<div class="w-12 h-12 bg-slate-800 rounded border border-white/5 flex items-center justify-center text-slate-500">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold">Medical First Responder</h4>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">VERIFIED</span>
+<span class="text-[10px] text-slate-500">Exp: Dec 2025</span>
+</div>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-slate-500 font-bold uppercase">Expires in</p>
+<p class="text-xs font-bold tabular-nums">482D</p>
+</div>
+</div>
+<!-- License Card 2 -->
+<div class="glass-card rounded-xl p-3 flex items-center gap-3">
+<div class="w-12 h-12 bg-slate-800 rounded border border-white/5 flex items-center justify-center text-slate-500">
+<span class="material-symbols-outlined">badge</span>
+</div>
+<div class="flex-1">
+<h4 class="text-sm font-bold">State Driver's License</h4>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">CLASS D</span>
+<span class="text-[10px] text-slate-500">Exp: Aug 2028</span>
+</div>
+</div>
+<div class="text-right">
+<p class="text-[10px] text-slate-500 font-bold uppercase">Expires in</p>
+<p class="text-xs font-bold tabular-nums">1458D</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB: Scan New -->
+<!-- Bottom Navigation Bar -->
+</body></html>
