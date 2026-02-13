@@ -1,47 +1,371 @@
+import { useState } from 'react';
+import {
+    Search,
+    Filter,
+    Plus,
+    MoreVertical,
+    Phone,
+    Mail,
+    LayoutGrid,
+    List as ListIcon,
+    TrendingUp,
+    Users,
+    Clock,
+    ShieldCheck
+} from 'lucide-react';
 
+interface Employee {
+    id: number;
+    name: string;
+    role: string;
+    department: 'Field Ops' | 'Management' | 'Sales' | 'Admin';
+    status: 'active' | 'on-leave' | 'inactive';
+    clockStatus: 'clocked-in' | 'clocked-out' | 'break';
+    efficiency: number;
+    email: string;
+    phone: string;
+    location: string;
+    certifications: { name: string; status: 'valid' | 'expiring' | 'expired' }[];
+    imgUrl: string;
+    joinDate: string;
+}
+
+const MOCK_EMPLOYEES: Employee[] = [
+    {
+        id: 1,
+        name: 'John Anderson',
+        role: 'Master Electrician',
+        department: 'Field Ops',
+        status: 'active',
+        clockStatus: 'clocked-in',
+        efficiency: 98,
+        email: 'j.anderson@workforce.com',
+        phone: '(555) 123-4567',
+        location: 'Zone A - Downtown',
+        certifications: [{ name: 'Master Lic.', status: 'valid' }, { name: 'OSHA 30', status: 'valid' }],
+        imgUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+        joinDate: 'Jan 2021'
+    },
+    {
+        id: 2,
+        name: 'Sarah Jenkins',
+        role: 'Project Supervisor',
+        department: 'Management',
+        status: 'active',
+        clockStatus: 'clocked-in',
+        efficiency: 94,
+        email: 's.jenkins@workforce.com',
+        phone: '(555) 987-6543',
+        location: 'HQ - Office 2',
+        certifications: [{ name: 'PMP', status: 'valid' }],
+        imgUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+        joinDate: 'Mar 2020'
+    },
+    {
+        id: 3,
+        name: 'Michael Chen',
+        role: 'HVAC Specialist',
+        department: 'Field Ops',
+        status: 'active',
+        clockStatus: 'clocked-out',
+        efficiency: 88,
+        email: 'm.chen@workforce.com',
+        phone: '(555) 456-7890',
+        location: 'Mobile Unit 4',
+        certifications: [{ name: 'EPA 608', status: 'expiring' }],
+        imgUrl: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+        joinDate: 'Jun 2022'
+    },
+    {
+        id: 4,
+        name: 'Emma Rodriguez',
+        role: 'Crane Operator',
+        department: 'Field Ops',
+        status: 'on-leave',
+        clockStatus: 'clocked-out',
+        efficiency: 92,
+        email: 'e.rodriguez@workforce.com',
+        phone: '(555) 789-0123',
+        location: 'N/A',
+        certifications: [{ name: 'CCO', status: 'valid' }],
+        imgUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+        joinDate: 'Nov 2021'
+    },
+    {
+        id: 5,
+        name: 'David Kim',
+        role: 'Sales Associate',
+        department: 'Sales',
+        status: 'active',
+        clockStatus: 'clocked-in',
+        efficiency: 85,
+        email: 'd.kim@workforce.com',
+        phone: '(555) 234-5678',
+        location: 'Showroom Floor',
+        certifications: [],
+        imgUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
+        joinDate: 'Aug 2023'
+    },
+];
 
 const Employees = () => {
-    const employees = [
-        { id: 1, name: 'John Anderson', role: 'Master Electrician', status: 'green', lastVerified: '2 days ago', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBK0flJ7Zg8JclAz15-32kG5o8xdfskh1KXoSRyV4Om24lyZ17BM7NGN9XbkOX19Pp0lQSyrQLKXuHCp1QnPQjGbE_V1BDnvOZgEsk4mVoYYVefQsZgDeh4wmR3q1pUHoYm9QUSzA2TrWeai302_JBAOeGYwxVz1Jf29fmZhjzl7D_EKlIvbFRzbZYT98OIL1dxdUHXYT6eUP91ywDiXgpPV5Pu6F2x6Mb1CVconUs2ZvXgZ_IY3kVTdl7UkXZsL8C7ji2dI5E7LMQ' },
-        { id: 2, name: 'Sarah Jenkins', role: 'Project Supervisor', status: 'yellow', lastVerified: '1 week ago', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBVBTQ2ug02Kr9vrDf2SWk_3P8DT1DPZoTSxMMMQ-O2s2AB0kQCAaIeFt4iEOQasrYq3U0pneDnkl4VDl6ou19uJhbZ8dhwfohBs0_jVvewIWT_7vQA-dMb7LW3vVKBU1VzZ1vydpw3Ef4Xorqt0fjiPWrlWLQDVSeKXcdnof-KP2k6VyjGBqJS9SbwdCIU6t2eNbgVuxdR3badRN8aS1iXDIa1-BLlhJJlGlv6TJBjBeXPmd-ulQ9TaQPVavVAjzWtvVU3EX8jWe0' },
-        { id: 3, name: 'Michael Chen', role: 'HVAC Specialist', status: 'red', lastVerified: 'Expired', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC-vUswO2vsMFqoJOQ6Bu-CCysrIJeDEvmXKn14l06DNcMP5IiS2_hR92CBKrj_4VMTXGdCz2klITFewr6z09P_FPjI06_i63X48BMcJESB0YTTBZRphBjHmIoFVy9oIERgkydRMnvWs749V8IIEXNDVIhAuuVQ27u3oAO0AYH8QhBf-hlEoICh9FZssTsqBQBNURtXgcfz9O3RMrcj_gLvo4-1sEmXgrAe4rmnNOalPUz6xr5m0O1QiUXeM6E_AM__ixDd7ZxyKzU' },
-        { id: 4, name: 'Emma Rodriguez', role: 'Crane Operator', status: 'green', lastVerified: 'Verified today', imgUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBzW0l_7n_7YG_VJxm9SzOLR1u5tDkBj1js7UVTj72aqUXuBbYYZe20VyPCji11hVOLsQkg-rsYkAr-aDCbkNsMFyeJkQ0VFhb6m1A8U_uvqMHKPAIdkYiaFBdwcnuhHBaUNB-92KLb4UbZT6iwtlpZlEyvBQIR4BHsBdQzRUSivivYPJn2WXes9GnrN-sn_uxAYAFevEUcoxtIM3eCHvxsD8xhQbFw_VzXW7vq5aU8-CWbmcqp9NnoZm6XjzeO94XP4_WUdsj_GLk' },
-    ];
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterRole, setFilterRole] = useState('All');
+
+    // Metrics Calculation
+    const totalEmployees = MOCK_EMPLOYEES.length;
+    const activeNow = MOCK_EMPLOYEES.filter(e => e.clockStatus === 'clocked-in').length;
+    const avgEfficiency = Math.round(MOCK_EMPLOYEES.reduce((acc, curr) => acc + curr.efficiency, 0) / totalEmployees);
+    const expiringCerts = MOCK_EMPLOYEES.filter(e => e.certifications.some(c => c.status === 'expiring' || c.status === 'expired')).length;
+
+    // Filter Logic
+    const filteredEmployees = MOCK_EMPLOYEES.filter(emp => {
+        const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            emp.role.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesRole = filterRole === 'All' || emp.department === filterRole;
+        return matchesSearch && matchesRole;
+    });
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold tracking-tight">Team Overview</h2>
-                <div className="flex gap-2">
-                    <button className="whitespace-nowrap bg-primary text-white px-4 py-2 rounded-full text-sm font-medium">All Workers ({employees.length})</button>
-                    <button className="whitespace-nowrap bg-primary/10 border border-primary/20 px-4 py-2 rounded-full text-sm font-medium">Valid</button>
+        <div className="space-y-8 min-h-screen">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Team Command Center</h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Manage your workforce, track performance, and monitor active status.</p>
+                </div>
+                <button className="bg-[#de5c1b] hover:bg-[#c94e10] text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors shadow-lg shadow-[#de5c1b]/20">
+                    <Plus className="w-4 h-4" />
+                    Add Talent
+                </button>
+            </div>
+
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <KPICard
+                    title="Total Headcount"
+                    value={totalEmployees.toString()}
+                    trend="+2 this month"
+                    icon={Users}
+                    color="blue"
+                />
+                <KPICard
+                    title="Active Now"
+                    value={activeNow.toString()}
+                    subtext={`${Math.round((activeNow / totalEmployees) * 100)}% coverage`}
+                    icon={Clock}
+                    color="emerald"
+                    active
+                />
+                <KPICard
+                    title="Avg Efficiency"
+                    value={`${avgEfficiency}%`}
+                    trend="+4.2% vs last week"
+                    icon={TrendingUp}
+                    color="orange"
+                />
+                <KPICard
+                    title="Compliance Alert"
+                    value={expiringCerts.toString()}
+                    subtext="Certs expiring soon"
+                    icon={ShieldCheck}
+                    color="red"
+                    alert={expiringCerts > 0}
+                />
+            </div>
+
+            {/* Controls Toolbar */}
+            <div className="bg-white dark:bg-[#1c1917] border border-slate-200 dark:border-white/10 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+                <div className="relative flex-1 w-full md:max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Search by name, role, or ID..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#de5c1b]/50 transition-all text-slate-900 dark:text-white"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                    <div className="relative">
+                        <select
+                            value={filterRole}
+                            onChange={(e) => setFilterRole(e.target.value)}
+                            className="appearance-none bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg pl-4 pr-10 py-2 text-sm font-medium focus:outline-none cursor-pointer hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-700 dark:text-slate-300"
+                        >
+                            <option value="All">All Departments</option>
+                            <option value="Field Ops">Field Ops</option>
+                            <option value="Management">Management</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                        <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    <div className="flex bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg p-1">
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-[#2c2420] text-[#de5c1b] shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                        >
+                            <LayoutGrid className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-[#2c2420] text-[#de5c1b] shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                        >
+                            <ListIcon className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {employees.map((emp) => (
-                    <div key={emp.id} className="bg-white dark:bg-primary/5 border border-primary/10 rounded-xl p-4 flex items-center gap-4 hover:border-primary/40 transition-colors group cursor-pointer">
-                        <div className="relative">
-                            <div
-                                className={`w-16 h-16 rounded-full bg-cover bg-center border-2 ${emp.status === 'green' ? 'border-emerald-500' :
-                                    emp.status === 'yellow' ? 'border-amber-500' : 'border-red-500'
-                                    }`}
-                                style={{ backgroundImage: `url('${emp.imgUrl}')` }}
-                            ></div>
-                            <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white dark:border-background-dark ${emp.status === 'green' ? 'bg-emerald-500' :
-                                emp.status === 'yellow' ? 'bg-amber-500' : 'bg-red-500'
-                                }`}></div>
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="font-bold text-lg">{emp.name}</h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">{emp.role}</p>
-                        </div>
-                        <span className="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">chevron_right</span>
-                    </div>
-                ))}
-            </div>
+            {/* Employee Grid/List View */}
+            {viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {filteredEmployees.map(emp => (
+                        <EmployeeCard key={emp.id} employee={emp} />
+                    ))}
+                </div>
+            ) : (
+                <div className="bg-white dark:bg-[#1c1917] border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
+                                <th className="p-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Employee</th>
+                                <th className="p-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Role & Dept</th>
+                                <th className="p-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Status</th>
+                                <th className="p-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Efficiency</th>
+                                <th className="p-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Contact</th>
+                                <th className="p-4 text-xs font-bold uppercase text-slate-500 tracking-wider"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredEmployees.map(emp => (
+                                <EmployeeRow key={emp.id} employee={emp} />
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 };
+
+// Sub-components
+
+const KPICard = ({ title, value, trend, subtext, icon: Icon, color, active, alert }: any) => (
+    <div className={`bg-white dark:bg-[#1c1917] border ${alert ? 'border-red-500/50 dark:border-red-500/30 ring-1 ring-red-500/20' : 'border-slate-200 dark:border-white/10'} rounded-xl p-5 flex flex-col justify-between shadow-sm relative overflow-hidden group`}>
+        {active && <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-emerald-500 m-3 animate-pulse"></div>}
+        <div>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3 ${color === 'orange' ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400' : color === 'blue' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400' : color === 'emerald' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400'}`}>
+                <Icon className="w-4 h-4" />
+            </div>
+            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">{title}</p>
+        </div>
+        <div className="mt-2">
+            <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{value}</h3>
+            {trend && <p className="text-xs font-medium text-emerald-500 mt-1">{trend}</p>}
+            {subtext && <p className="text-xs font-medium text-slate-400 mt-1">{subtext}</p>}
+        </div>
+    </div>
+);
+
+const EmployeeCard = ({ employee }: { employee: Employee }) => (
+    <div className="bg-white dark:bg-[#1c1917] border border-slate-200 dark:border-white/10 rounded-xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-md hover:border-[#de5c1b]/30 transition-all group relative overflow-hidden">
+        <div className="absolute top-4 right-4 text-slate-400 hover:text-[#de5c1b] cursor-pointer">
+            <MoreVertical className="w-5 h-5" />
+        </div>
+
+        <div className="flex items-start gap-4">
+            <div className="relative">
+                <img src={employee.imgUrl} alt={employee.name} className="w-14 h-14 rounded-full object-cover border-2 border-slate-100 dark:border-white/10" />
+                <div className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#1c1917] ${employee.clockStatus === 'clocked-in' ? 'bg-emerald-500' : employee.status === 'on-leave' ? 'bg-amber-500' : 'bg-slate-400'}`}></div>
+            </div>
+            <div>
+                <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-[#de5c1b] transition-colors">{employee.name}</h3>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{employee.role}</p>
+                <span className="text-xs font-bold py-0.5 px-2 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 mt-1 inline-block">{employee.department}</span>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 py-4 border-t border-b border-slate-100 dark:border-white/5">
+            <div>
+                <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Efficiency</p>
+                <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-[#de5c1b]" style={{ width: `${employee.efficiency}%` }}></div>
+                    </div>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">{employee.efficiency}%</span>
+                </div>
+            </div>
+            <div>
+                <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Certs</p>
+                <div className="flex -space-x-1 mt-1">
+                    {employee.certifications.length > 0 ? employee.certifications.map((cert, i) => (
+                        <div key={i} title={cert.name} className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white border border-white dark:border-[#1c1917] ${cert.status === 'valid' ? 'bg-emerald-500' : 'bg-red-500'}`}>
+                            {cert.name[0]}
+                        </div>
+                    )) : <span className="text-xs text-slate-400">None</span>}
+                </div>
+            </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 text-sm">
+            <button className="flex-1 py-2 flex items-center justify-center gap-2 rounded-lg bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-[#de5c1b] transition-colors font-medium border border-transparent hover:border-[#de5c1b]/20">
+                <Phone className="w-4 h-4" /> Call
+            </button>
+            <button className="flex-1 py-2 flex items-center justify-center gap-2 rounded-lg bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-[#de5c1b] transition-colors font-medium border border-transparent hover:border-[#de5c1b]/20">
+                <Mail className="w-4 h-4" /> Msg
+            </button>
+        </div>
+    </div>
+);
+
+const EmployeeRow = ({ employee }: { employee: Employee }) => (
+    <tr className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+        <td className="p-4">
+            <div className="flex items-center gap-3">
+                <img src={employee.imgUrl} alt={employee.name} className="w-9 h-9 rounded-full object-cover" />
+                <span className="font-bold text-slate-900 dark:text-white group-hover:text-[#de5c1b] transition-colors">{employee.name}</span>
+            </div>
+        </td>
+        <td className="p-4">
+            <div className="flex flex-col">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{employee.role}</span>
+                <span className="text-xs text-slate-400">{employee.department}</span>
+            </div>
+        </td>
+        <td className="p-4">
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${employee.clockStatus === 'clocked-in'
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                    : 'bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400'
+                }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${employee.clockStatus === 'clocked-in' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                {employee.clockStatus === 'clocked-in' ? 'Active' : 'Offline'}
+            </span>
+        </td>
+        <td className="p-4">
+            <div className="flex items-center gap-2">
+                <span className="font-bold text-slate-700 dark:text-slate-300">{employee.efficiency}%</span>
+                <div className="w-16 h-1 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#de5c1b]" style={{ width: `${employee.efficiency}%` }}></div>
+                </div>
+            </div>
+        </td>
+        <td className="p-4 text-slate-500 dark:text-slate-400 text-sm">
+            <div className="flex items-center gap-3">
+                <Phone className="w-4 h-4 hover:text-[#de5c1b] cursor-pointer" />
+                <Mail className="w-4 h-4 hover:text-[#de5c1b] cursor-pointer" />
+            </div>
+        </td>
+        <td className="p-4 text-right">
+            <button className="text-slate-400 hover:text-[#de5c1b]">
+                <MoreVertical className="w-4 h-4" />
+            </button>
+        </td>
+    </tr>
+);
 
 export default Employees;

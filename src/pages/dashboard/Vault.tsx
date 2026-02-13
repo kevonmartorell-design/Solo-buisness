@@ -1,92 +1,153 @@
 
-
 import { useState } from 'react';
 import clsx from 'clsx';
-
 import { useSidebar } from '../../contexts/SidebarContext';
+import {
+    Search,
+    Settings,
+    Menu,
+    Shield,
+    Folder,
+    FileText,
+    AlertTriangle,
+    CheckCircle,
+    Clock,
+    Upload,
+    MoreVertical,
+    Download,
+    Eye
+} from 'lucide-react';
+
+// --- Types ---
+
+interface VaultItem {
+    id: string;
+    name: string;
+    type: 'License' | 'ID' | 'Certificate' | 'Training';
+    status: 'Verified' | 'Pending' | 'Expiring' | 'Expired';
+    expiryDate: string; // YYYY-MM-DD
+    category: 'IDs' | 'Licenses' | 'Training' | 'Legal';
+    size: string;
+    lastUpdated: string;
+}
+
+interface VaultFolder {
+    id: string;
+    name: string;
+    count: number;
+    size: string;
+    color: string;
+    icon: any;
+    category: VaultItem['category'];
+}
+
+// --- Mock Data ---
+
+const MOCK_FOLDERS: VaultFolder[] = [
+    { id: 'f1', name: 'Legal IDs', count: 4, size: '12.4 MB', color: 'blue', icon: Shield, category: 'IDs' },
+    { id: 'f2', name: 'Licenses & Permits', count: 3, size: '5.2 MB', color: 'orange', icon: FileText, category: 'Licenses' },
+    { id: 'f3', name: 'Training Certs', count: 12, size: '45.8 MB', color: 'emerald', icon: CheckCircle, category: 'Training' },
+    { id: 'f4', name: 'Contracts', count: 8, size: '18.2 MB', color: 'purple', icon: Folder, category: 'Legal' },
+];
+
+const MOCK_DOCUMENTS: VaultItem[] = [
+    { id: 'd1', name: 'Medical First Responder', type: 'License', status: 'Expiring', expiryDate: '2026-03-01', category: 'Licenses', size: '2.4 MB', lastUpdated: '2024-03-01' },
+    { id: 'd2', name: "State Driver's License", type: 'ID', status: 'Verified', expiryDate: '2028-08-15', category: 'IDs', size: '1.1 MB', lastUpdated: '2023-08-15' },
+    { id: 'd3', name: 'CLEET Private Security', type: 'License', status: 'Expiring', expiryDate: '2026-02-20', category: 'Licenses', size: '3.5 MB', lastUpdated: '2024-02-20' },
+    { id: 'd4', name: 'OSHA 30-Hour Safety', type: 'Certificate', status: 'Verified', expiryDate: '2027-05-10', category: 'Training', size: '5.0 MB', lastUpdated: '2024-05-10' },
+    { id: 'd5', name: 'Background Check 2024', type: 'ID', status: 'Verified', expiryDate: '2025-01-15', category: 'IDs', size: '800 KB', lastUpdated: '2024-01-15' },
+    { id: 'd6', name: 'Workplace Harassment', type: 'Training', status: 'Pending', expiryDate: '2025-06-01', category: 'Training', size: '15.2 MB', lastUpdated: '2024-06-01' },
+];
+
+// --- Helpers ---
+
+const getDaysUntilExpiry = (dateString: string) => {
+    const today = new Date();
+    const expiry = new Date(dateString);
+    const diffTime = expiry.getTime() - today.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
+
+const getStatusColor = (status: VaultItem['status']) => {
+    switch (status) {
+        case 'Verified': return 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20';
+        case 'Pending': return 'text-amber-500 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20';
+        case 'Expiring': return 'text-red-500 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20';
+        case 'Expired': return 'text-slate-500 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700';
+        default: return 'text-slate-500';
+    }
+};
 
 const Vault = () => {
     const { toggleSidebar } = useSidebar();
-    const [activeFilter, setActiveFilter] = useState('All Docs');
+    const [activeFilter, setActiveFilter] = useState<'All' | VaultItem['category']>('All');
     const [searchQuery, setSearchQuery] = useState('');
 
-    const folders = [
-        { id: 1, name: 'Legal IDs', count: 4, size: '12.4 MB', icon: 'folder_shared', color: 'blue', category: 'IDs' },
-        { id: 2, name: 'Firearm Permits', count: 2, size: '3.1 MB', icon: 'military_tech', color: 'orange', category: 'Licenses' },
-        { id: 3, name: 'Certifications', count: 12, size: '45.8 MB', icon: 'verified_user', color: 'emerald', category: 'Licenses' },
-        { id: 4, name: 'Training', count: 8, size: '18.2 MB', icon: 'school', color: 'purple', category: 'Training' },
-    ];
+    // Filter Logic
+    const filteredDocs = MOCK_DOCUMENTS.filter(doc => {
+        const matchesFilter = activeFilter === 'All' || doc.category === activeFilter;
+        const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesFilter && matchesSearch;
+    });
 
-    const documents = [
-        { id: 1, name: 'Medical First Responder', status: 'VERIFIED', expDate: 'Dec 2025', expiresDays: '482D', icon: 'description', type: 'License', category: 'Licenses' },
-        { id: 2, name: "State Driver's License", status: 'CLASS D', expDate: 'Aug 2028', expiresDays: '1458D', icon: 'badge', type: 'ID', category: 'IDs' },
-    ];
-
-    const filters = ['All Docs', 'Licenses', 'Training', 'IDs'];
-
-    const filteredFolders = folders.filter(folder =>
-        (activeFilter === 'All Docs' || folder.category === activeFilter) &&
-        folder.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const filteredDocuments = documents.filter(doc =>
-        (activeFilter === 'All Docs' || doc.category === activeFilter) &&
-        doc.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const expiringDocs = MOCK_DOCUMENTS.filter(doc => {
+        const days = getDaysUntilExpiry(doc.expiryDate);
+        return days <= 30 && days >= 0;
+    });
 
     return (
-        <div className="font-display text-slate-900 dark:text-slate-100 flex flex-col h-full bg-background-light dark:bg-background-dark">
-            <header className="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10 px-4 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div
-                        onClick={toggleSidebar}
-                        className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 cursor-pointer hover:bg-primary/20 transition-colors"
-                    >
-                        <span className="material-symbols-outlined text-primary">menu</span>
-                    </div>
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight">The Vault</h1>
-                        <div className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">AES-256 Encrypted</p>
+        <div className="bg-slate-50 dark:bg-[#151210] min-h-screen text-slate-900 dark:text-slate-100 font-display flex flex-col">
+
+            {/* --- Header --- */}
+            <header className="sticky top-0 z-30 bg-white/80 dark:bg-[#211611]/80 backdrop-blur-md px-4 py-4 border-b border-slate-200 dark:border-white/10">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <button onClick={toggleSidebar} className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+                            <Menu className="w-6 h-6" />
+                        </button>
+                        <div>
+                            <h1 className="text-xl font-bold tracking-tight">The Vault</h1>
+                            <div className="flex items-center gap-2">
+                                <Shield className="w-3 h-3 text-emerald-500" />
+                                <span className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">AES-256 Encrypted Storage</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="flex gap-2">
-                    <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
-                        <span className="material-symbols-outlined">search</span>
-                    </button>
-                    <button className="p-2 rounded-lg hover:bg-primary/10 transition-colors">
-                        <span className="material-symbols-outlined">settings</span>
-                    </button>
+                    <div className="flex gap-2">
+                        <button className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-slate-500">
+                            <Settings className="w-5 h-5" />
+                        </button>
+                        <button className="bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-[#de5c1b]/20 transition-all flex items-center gap-2">
+                            <Upload className="w-4 h-4" /> Upload
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            <main className="flex-1 px-4 py-6 max-w-2xl mx-auto w-full">
-                {/* Search & Filter */}
-                <div className="mb-8">
-                    <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span className="material-symbols-outlined text-slate-500 text-sm">search</span>
-                        </div>
+            <main className="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full space-y-8">
+
+                {/* --- Search & Filter --- */}
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="relative w-full md:max-w-md group">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#de5c1b] transition-colors" />
                         <input
-                            className="w-full bg-stealth-gray/50 dark:bg-[#1e1e1e]/50 border border-white/10 rounded-lg py-3 pl-10 pr-4 focus:ring-1 focus:ring-primary focus:border-primary outline-none text-sm transition-all"
-                            placeholder="Search licenses, permits, IDs..."
                             type="text"
+                            placeholder="Search documents, IDs, or licenses..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-white dark:bg-[#1c1917] border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-[#de5c1b]"
                         />
                     </div>
-                    <div className="flex gap-2 mt-4 overflow-x-auto pb-2 no-scrollbar">
-                        {filters.map((filter) => (
+                    <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto no-scrollbar">
+                        {['All', 'IDs', 'Licenses', 'Training', 'Legal'].map(filter => (
                             <button
                                 key={filter}
-                                onClick={() => setActiveFilter(filter)}
+                                onClick={() => setActiveFilter(filter as any)}
                                 className={clsx(
-                                    "px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border",
+                                    "px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border",
                                     activeFilter === filter
-                                        ? "bg-primary text-white border-primary"
-                                        : "bg-stealth-gray dark:bg-[#1e1e1e] border-white/10 text-slate-400 hover:text-white"
+                                        ? "bg-[#de5c1b] text-white border-[#de5c1b]"
+                                        : "bg-white dark:bg-[#1c1917] text-slate-500 border-slate-200 dark:border-white/10 hover:border-[#de5c1b]/50"
                                 )}
                             >
                                 {filter}
@@ -95,77 +156,117 @@ const Vault = () => {
                     </div>
                 </div>
 
-                {/* Priority Alerts */}
-                <section className="mb-8">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">Critical Alerts</h2>
-                        <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold">1 ACTION REQUIRED</span>
-                    </div>
-                    <div className="glass-card bg-[rgba(40,40,40,0.4)] backdrop-blur-xl border border-white/10 rounded-xl p-4 flex items-center gap-4 border-l-4 border-l-primary relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-2 opacity-10">
-                            <span className="material-symbols-outlined text-6xl">warning</span>
+                {/* --- Critical Alerts --- */}
+                {expiringDocs.length > 0 && (
+                    <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4 text-[#de5c1b]" /> Action Required
+                            </h2>
                         </div>
-                        <div className="w-14 h-14 rounded-lg bg-black/40 border border-white/5 flex-shrink-0 overflow-hidden relative">
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10"></div>
-                            <img className="w-full h-full object-cover" alt="Document preview" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2y7XfnzM53LUZ6jLvPb_pzDJLVR1oW5gvil0oA4e_AzQsl1hjuHKTYAZqvI3SBEaQGm_k5kq7d0XZtV31CupRV_02D4nqsu4zqzltgKnbfRHUPyBMvUyEzICvdulhDy26wP7dJ5krypgAXZt8cqeYA1jPKCYR5evOXg5Ud5QJv5YUuqQwBeGCMVNkAxNXcI8sqVJUICs-wJ0NBPdSDBeQLCmeSUDmfPxMIcVy1nZW2UK5MvVAnEPkCOI4S5HUWp839ol7J8nS4Rg" />
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {expiringDocs.map(doc => (
+                                <div key={doc.id} className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-500/20 rounded-xl p-4 flex items-start gap-4">
+                                    <div className="w-12 h-12 bg-white dark:bg-[#211611] rounded-lg flex items-center justify-center border border-red-100 dark:border-red-500/20 text-red-500 shadow-sm">
+                                        <Clock className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-slate-900 dark:text-white">{doc.name}</h3>
+                                        <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">Expires in {getDaysUntilExpiry(doc.expiryDate)} days</p>
+                                        <div className="mt-3 flex gap-3">
+                                            <button className="text-xs font-bold bg-white dark:bg-[#211611] text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 shadow-sm hover:bg-slate-50 dark:hover:bg-white/5">Details</button>
+                                            <button className="text-xs font-bold bg-[#de5c1b] text-white px-3 py-1.5 rounded-lg shadow-md shadow-[#de5c1b]/20 hover:bg-[#de5c1b]/90">Renew Now</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <div className="flex-1">
-                            <h3 className="font-bold text-sm">CLEET Private Security</h3>
-                            <p className="text-xs text-slate-400 mb-1">ID: #4492-BX-2024</p>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-primary tabular-nums">EXPIRING IN 14 DAYS</span>
-                            </div>
-                        </div>
-                        <button className="bg-primary text-white text-[10px] font-bold px-3 py-2 rounded uppercase tracking-wider">Renew</button>
+                    </section>
+                )}
+
+                {/* --- Secure Folders --- */}
+                <section>
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">Secure Folders</h2>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {MOCK_FOLDERS.map(folder => {
+                            const Icon = folder.icon;
+                            return (
+                                <div key={folder.id} className="bg-white dark:bg-[#1c1917] border border-slate-200 dark:border-white/10 rounded-xl p-4 hover:border-[#de5c1b]/30 hover:shadow-lg hover:shadow-[#de5c1b]/5 transition-all group cursor-pointer group">
+                                    <div className={`w-10 h-10 rounded-lg bg-${folder.color}-50 dark:bg-${folder.color}-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                                        <Icon className={`w-5 h-5 text-${folder.color}-500`} />
+                                    </div>
+                                    <h3 className="font-bold text-slate-900 dark:text-white">{folder.name}</h3>
+                                    <p className="text-xs text-slate-500 mt-1">{folder.count} Items • {folder.size}</p>
+                                </div>
+                            );
+                        })}
                     </div>
                 </section>
 
-                {/* Secure Folders Grid */}
-                {filteredFolders.length > 0 && (
-                    <section className="mb-8">
-                        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Secure Folders</h2>
-                        <div className="grid grid-cols-2 gap-4">
-                            {filteredFolders.map((folder) => (
-                                <div key={folder.id} className="glass-folder bg-gradient-to-br from-white/10 to-transparent backdrop-blur-lg border border-white/5 rounded-xl p-4 flex flex-col gap-3 group cursor-pointer hover:border-primary/30 transition-all">
-                                    <div className={`w-10 h-10 rounded-lg bg-${folder.color}-500/10 flex items-center justify-center border border-${folder.color}-500/20`}>
-                                        <span className={`material-symbols-outlined text-${folder.color}-400`}>{folder.icon}</span>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm font-bold">{folder.name}</h3>
-                                        <p className="text-[10px] text-slate-500">{folder.count} Items • {folder.size}</p>
-                                    </div>
-                                </div>
-                            ))}
+                {/* --- Recent Documents --- */}
+                <section>
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">All Documents</h2>
+                    <div className="bg-white dark:bg-[#1c1917] border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm">
+                                <thead className="bg-slate-50 dark:bg-white/5 border-b border-slate-200 dark:border-white/10">
+                                    <tr>
+                                        <th className="px-6 py-4 font-bold text-slate-500">Document Name</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500">Status</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500">Expires</th>
+                                        <th className="px-6 py-4 font-bold text-slate-500 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                                    {filteredDocs.map(doc => (
+                                        <tr key={doc.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded bg-slate-100 dark:bg-white/10 flex items-center justify-center text-slate-400">
+                                                        <FileText className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-slate-900 dark:text-white group-hover:text-[#de5c1b] transition-colors">{doc.name}</p>
+                                                        <p className="text-xs text-slate-500">{doc.type} • {doc.size}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusColor(doc.status)}`}>
+                                                    {doc.status.toUpperCase()}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600 dark:text-slate-400 font-medium">
+                                                {doc.expiryDate}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors" title="View">
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors" title="Download">
+                                                        <Download className="w-4 h-4" />
+                                                    </button>
+                                                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
+                                                        <MoreVertical className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredDocs.length === 0 && (
+                                        <tr>
+                                            <td colSpan={4} className="px-6 py-12 text-center text-slate-500 italic">
+                                                No documents found matching "{searchQuery}"
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
-                    </section>
-                )}
+                    </div>
+                </section>
 
-                {/* Document List */}
-                {filteredDocuments.length > 0 && (
-                    <section>
-                        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Active Compliance</h2>
-                        <div className="space-y-3">
-                            {filteredDocuments.map((doc) => (
-                                <div key={doc.id} className="glass-card bg-[rgba(40,40,40,0.4)] backdrop-blur-xl border border-white/10 rounded-xl p-3 flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-slate-800 rounded border border-white/5 flex items-center justify-center text-slate-500">
-                                        <span className="material-symbols-outlined">{doc.icon}</span>
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="text-sm font-bold">{doc.name}</h4>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded">{doc.status}</span>
-                                            <span className="text-[10px] text-slate-500">Exp: {doc.expDate}</span>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[10px] text-slate-500 font-bold uppercase">Expires in</p>
-                                        <p className="text-xs font-bold tabular-nums">{doc.expiresDays}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                )}
             </main>
         </div>
     );

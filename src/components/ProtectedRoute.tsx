@@ -1,12 +1,21 @@
-import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { useAuth, type Role } from '../contexts/AuthContext';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    // TODO: Implement actual authentication check
-    const isAuthenticated = true; // Mocked for now
+interface ProtectedRouteProps {
+    children: React.ReactNode;
+    allowedRoles?: Role[];
+}
 
-    if (!isAuthenticated) {
+const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
+    const { user, hasPermission } = useAuth();
+
+    if (!user) {
         return <Navigate to="/login" replace />;
+    }
+
+    if (allowedRoles && !hasPermission(allowedRoles)) {
+        // Redirect to dashboard if unauthorized for specific route, or handle 403
+        return <Navigate to="/dashboard" replace />;
     }
 
     return <>{children}</>;

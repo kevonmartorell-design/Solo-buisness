@@ -1,8 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useBranding } from '../../contexts/BrandingContext';
 
 const Login = () => {
     const navigate = useNavigate();
+    const { companyName, logoUrl } = useBranding();
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -12,7 +14,7 @@ const Login = () => {
 
     return (
         <div className="bg-background-light dark:bg-[#211611] font-display min-h-screen flex flex-col items-center justify-center p-4" style={{
-            backgroundImage: "radial-gradient(circle at 2px 2px, rgba(222, 92, 27, 0.05) 1px, transparent 0)",
+            backgroundImage: "radial-gradient(circle at 2px 2px, rgba(var(--color-primary-rgb), 0.05) 1px, transparent 0)",
             backgroundSize: "40px 40px"
         }}>
             <div className="w-full max-w-[440px] flex flex-col items-center">
@@ -20,9 +22,13 @@ const Login = () => {
                 <div className="mb-8 flex flex-col items-center">
                     <div className="w-20 h-20 bg-industrial-charcoal border border-industrial-silver/20 rounded-xl flex items-center justify-center shadow-2xl relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent"></div>
-                        <span className="material-symbols-outlined text-primary text-5xl z-10">
-                            settings_backup_restore
-                        </span>
+                        {logoUrl ? (
+                            <img src={logoUrl} alt="Logo" className="w-12 h-12 object-contain z-10" />
+                        ) : (
+                            <span className="material-symbols-outlined text-primary text-5xl z-10">
+                                settings_backup_restore
+                            </span>
+                        )}
                         <div className="absolute -bottom-2 -right-2 opacity-20">
                             <span className="material-symbols-outlined text-6xl text-industrial-silver">
                                 precision_manufacturing
@@ -30,9 +36,9 @@ const Login = () => {
                         </div>
                     </div>
                     <h1 className="mt-6 text-3xl font-bold text-white tracking-tight text-center italic">
-                        Industrial <span className="text-primary italic">Resilience</span>
+                        {companyName}
                     </h1>
-                    <p className="text-industrial-silver/60 text-sm mt-2 font-medium tracking-widest uppercase">Zen Operations Portal</p>
+                    <p className="text-industrial-silver/60 text-sm mt-2 font-medium tracking-widest uppercase">Empowering Your Business</p>
                 </div>
 
                 {/* Login Card */}
@@ -47,7 +53,7 @@ const Login = () => {
                                     <span className="material-symbols-outlined text-industrial-silver/40 text-xl group-focus-within:text-primary transition-colors">mail</span>
                                 </div>
                                 <input
-                                    className="w-full bg-[#261f1c] border border-industrial-silver/20 rounded-lg py-3.5 pl-11 pr-4 text-white placeholder:text-industrial-silver/30 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                                    className="w-full bg-[#261f1c] border border-industrial-silver/20 rounded-lg py-3.5 pl-11 pr-4 text-white placeholder:text-industrial-silver/30 focus:outline-none focus:ring-1 focus:ring-[#de5c1b] focus:border-[#de5c1b] transition-all"
                                     placeholder="operator@resilience.io"
                                     type="email"
                                 />
@@ -65,7 +71,7 @@ const Login = () => {
                                     <span className="material-symbols-outlined text-industrial-silver/40 text-xl group-focus-within:text-primary transition-colors">lock</span>
                                 </div>
                                 <input
-                                    className="w-full bg-[#261f1c] border border-industrial-silver/20 rounded-lg py-3.5 pl-11 pr-12 text-white placeholder:text-industrial-silver/30 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                                    className="w-full bg-[#261f1c] border border-industrial-silver/20 rounded-lg py-3.5 pl-11 pr-12 text-white placeholder:text-industrial-silver/30 focus:outline-none focus:ring-1 focus:ring-[#de5c1b] focus:border-[#de5c1b] transition-all"
                                     placeholder="••••••••"
                                     type="password"
                                 />
@@ -80,7 +86,7 @@ const Login = () => {
 
                         {/* Login Button */}
                         <button
-                            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-lg shadow-lg shadow-primary/20 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-2"
+                            className="w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-4 rounded-lg shadow-lg shadow-[#de5c1b]/20 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-2"
                             type="submit"
                         >
                             <span className="material-symbols-outlined text-xl">login</span>

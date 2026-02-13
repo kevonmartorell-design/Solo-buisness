@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 
 interface SidebarContextType {
@@ -9,7 +9,7 @@ interface SidebarContextType {
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
-export const SidebarProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const SidebarProvider = ({ children }: { children: ReactNode }) => {
     // Default to open on desktop (we can refine this with media queries if needed, 
     // but for now let's assume open and let the layout handle hiding on mobile via CSS if not toggled)
     // Actually, to match current "hidden md:flex", desktop is open, mobile is closed.

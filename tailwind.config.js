@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        "primary": "#de5c1b",
+        "primary": "rgb(var(--color-primary-rgb) / <alpha-value>)",
         "background-light": "#f8f6f6",
         "background-dark": "#121212", // Landing page default
         "charcoal": "#211611",

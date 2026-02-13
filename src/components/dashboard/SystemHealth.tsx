@@ -17,7 +17,7 @@ const SystemHealth = () => {
 
             <h3 className="text-white font-bold text-lg mb-2 relative z-10">System Health</h3>
 
-            <div className="relative size-64 flex items-center justify-center">
+            <div className="relative size-64">
                 <ResponsiveContainer width="100%" height="100%">
                     <RadialBarChart
                         cx="50%"

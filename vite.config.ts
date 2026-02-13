@@ -8,4 +8,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    port: 3000,
+    strictPort: true,
+  },
 })
+// Last config update: to force restart
+

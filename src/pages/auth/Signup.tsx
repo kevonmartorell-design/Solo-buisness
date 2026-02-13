@@ -22,8 +22,8 @@ const Signup = () => {
                     <div className="w-16 h-16 bg-primary/10 border border-primary/30 rounded-lg flex items-center justify-center mb-6">
                         <span className="material-symbols-outlined text-primary text-4xl" data-icon="factory">factory</span>
                     </div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Build Your Resilience</h1>
-                    <p className="text-metallic-silver/60 text-center font-normal">Join the network of industrial strength.</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Join WorkForce</h1>
+                    <p className="text-metallic-silver/60 text-center font-normal">Empowering Your Business</p>
                 </div>
 
                 <div className="space-y-5">
@@ -115,7 +115,7 @@ const Signup = () => {
             <div className="absolute bottom-8 right-8 hidden md:block opacity-20 pointer-events-none">
                 <div className="flex flex-col items-end">
                     <div className="w-32 h-[1px] bg-metallic-silver/40 mb-2"></div>
-                    <div className="text-[8px] text-metallic-silver font-mono uppercase tracking-[0.3em]">Durability. Focus. Strength.</div>
+                    <div className="text-[8px] text-metallic-silver font-mono uppercase tracking-[0.3em]">Efficiency. Growth. Success.</div>
                 </div>
             </div>
         </div>
