@@ -1,5 +1,12 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
+interface SmtpSettings {
+    host: string;
+    port: string;
+    user: string;
+    pass: string;
+}
+
 interface BrandingContextType {
     companyName: string;
     setCompanyName: (name: string) => void;
@@ -7,6 +14,18 @@ interface BrandingContextType {
     setLogoUrl: (url: string | null) => void;
     primaryColor: string;
     setPrimaryColor: (color: string) => void;
+    secondaryColor: string;
+    setSecondaryColor: (color: string) => void;
+    font: string;
+    setFont: (font: string) => void;
+    customDomain: string;
+    setCustomDomain: (domain: string) => void;
+    smtpSettings: SmtpSettings;
+    setSmtpSettings: (settings: SmtpSettings) => void;
+    smsSenderId: string;
+    setSmsSenderId: (id: string) => void;
+    showPoweredBy: boolean;
+    setShowPoweredBy: (show: boolean) => void;
     resetBranding: () => void;
 }
 
@@ -23,11 +42,27 @@ export const BrandingProvider = ({ children }: { children: ReactNode }) => {
     const [companyName, setCompanyName] = useState(() => localStorage.getItem('companyName') || 'Aegis Cert');
     const [logoUrl, setLogoUrl] = useState<string | null>(() => localStorage.getItem('logoUrl'));
     const [primaryColor, setPrimaryColor] = useState(() => localStorage.getItem('primaryColor') || '#de5c1b');
+    const [secondaryColor, setSecondaryColor] = useState(() => localStorage.getItem('secondaryColor') || '#1e293b');
+    const [font, setFont] = useState(() => localStorage.getItem('font') || 'Inter');
+    const [customDomain, setCustomDomain] = useState(() => localStorage.getItem('customDomain') || '');
+    const [smtpSettings, setSmtpSettings] = useState<SmtpSettings>(() => {
+        const saved = localStorage.getItem('smtpSettings');
+        return saved ? JSON.parse(saved) : { host: '', port: '', user: '', pass: '' };
+    });
+    const [smsSenderId, setSmsSenderId] = useState(() => localStorage.getItem('smsSenderId') || '');
+    const [showPoweredBy, setShowPoweredBy] = useState(() => localStorage.getItem('showPoweredBy') === 'true');
 
     // Persistence & CSS Variable Update
     useEffect(() => {
         localStorage.setItem('companyName', companyName);
         localStorage.setItem('primaryColor', primaryColor);
+        localStorage.setItem('secondaryColor', secondaryColor);
+        localStorage.setItem('font', font);
+        localStorage.setItem('customDomain', customDomain);
+        localStorage.setItem('smtpSettings', JSON.stringify(smtpSettings));
+        localStorage.setItem('smsSenderId', smsSenderId);
+        localStorage.setItem('showPoweredBy', String(showPoweredBy));
+
         if (logoUrl) {
             localStorage.setItem('logoUrl', logoUrl);
         } else {
@@ -37,18 +72,26 @@ export const BrandingProvider = ({ children }: { children: ReactNode }) => {
         // Update CSS Variables
         const root = document.documentElement;
         root.style.setProperty('--color-primary', primaryColor);
+        root.style.setProperty('--color-secondary', secondaryColor);
+        root.style.setProperty('--font-family', font); // Assumes generic font names or loaded fonts
 
         const rgb = hexToRgb(primaryColor);
         if (rgb) {
             root.style.setProperty('--color-primary-rgb', rgb);
         }
 
-    }, [companyName, logoUrl, primaryColor]);
+    }, [companyName, logoUrl, primaryColor, secondaryColor, font, customDomain, smtpSettings, smsSenderId, showPoweredBy]);
 
     const resetBranding = () => {
         setCompanyName('Aegis Cert');
         setLogoUrl(null);
         setPrimaryColor('#de5c1b');
+        setSecondaryColor('#1e293b');
+        setFont('Inter');
+        setCustomDomain('');
+        setSmtpSettings({ host: '', port: '', user: '', pass: '' });
+        setSmsSenderId('');
+        setShowPoweredBy(true);
     };
 
     return (
@@ -56,6 +99,12 @@ export const BrandingProvider = ({ children }: { children: ReactNode }) => {
             companyName, setCompanyName,
             logoUrl, setLogoUrl,
             primaryColor, setPrimaryColor,
+            secondaryColor, setSecondaryColor,
+            font, setFont,
+            customDomain, setCustomDomain,
+            smtpSettings, setSmtpSettings,
+            smsSenderId, setSmsSenderId,
+            showPoweredBy, setShowPoweredBy,
             resetBranding
         }}>
             {children}

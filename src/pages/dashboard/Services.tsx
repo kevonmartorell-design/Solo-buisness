@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Menu,
     Search,
@@ -10,16 +10,24 @@ import {
     Sparkles,
     AlertTriangle,
     Tag,
-    X
+    X,
+    Hammer,
+    Stethoscope,
+    Shield
 } from 'lucide-react';
-import { mockServices, type Service } from '../../data/mockServices';
-import { mockProducts, type Product } from '../../data/mockProducts';
+import { getMockServices, type Service } from '../../data/mockServices';
+import { getMockProducts, type Product } from '../../data/mockProducts';
+import { useVault } from '../../contexts/VaultContext';
 
 const Services = () => {
+    const { industry } = useVault();
     const [activeTab, setActiveTab] = useState<'services' | 'products'>('services');
+
+    const [localServices, setLocalServices] = useState<Service[]>([]);
+    const [localProducts, setLocalProducts] = useState<Product[]>([]);
+
+    // Search & Filter State
     const [searchTerm, setSearchTerm] = useState('');
-    const [localServices, setLocalServices] = useState<Service[]>(mockServices);
-    const [localProducts, setLocalProducts] = useState<Product[]>(mockProducts);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Form State
@@ -27,6 +35,12 @@ const Services = () => {
     const [newItemPrice, setNewItemPrice] = useState('');
     const [newItemCategory, setNewItemCategory] = useState('');
     const [newItemExtra, setNewItemExtra] = useState(''); // Duration or Stock
+
+    // Load data based on industry
+    useEffect(() => {
+        setLocalServices(getMockServices(industry));
+        setLocalProducts(getMockProducts(industry));
+    }, [industry]);
 
     const filteredServices = localServices.filter(s =>
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -39,13 +53,13 @@ const Services = () => {
     );
 
     const handleAddItem = () => {
-        if (!newItemName || !newItemPrice || !newItemCategory) return;
+        if (!newItemName || !newItemPrice) return; // Minimal validation
 
         if (activeTab === 'services') {
             const newService: Service = {
                 id: `new-${Date.now()}`,
                 name: newItemName,
-                category: newItemCategory,
+                category: newItemCategory || 'General',
                 price: parseFloat(newItemPrice),
                 duration: parseInt(newItemExtra) || 60,
                 description: 'Newly added service.',
@@ -56,7 +70,7 @@ const Services = () => {
             const newProduct: Product = {
                 id: `new-${Date.now()}`,
                 name: newItemName,
-                category: newItemCategory,
+                category: newItemCategory || 'General',
                 price: parseFloat(newItemPrice),
                 stock: parseInt(newItemExtra) || 0,
                 reorderPoint: 5,
@@ -75,6 +89,43 @@ const Services = () => {
         setIsAddModalOpen(false);
     };
 
+    // Helper to get industry-specific icons and labels
+    const getIndustryConfig = () => {
+        switch (industry) {
+            case 'Healthcare':
+                return {
+                    serviceLabel: 'Procedures',
+                    productLabel: 'Supplies',
+                    mainIcon: Stethoscope,
+                    bundleText: 'Patients booking Annual Checkups are 40% more likely to purchase Supplements.'
+                };
+            case 'Construction':
+                return {
+                    serviceLabel: 'Labor',
+                    productLabel: 'Materials',
+                    mainIcon: Hammer,
+                    bundleText: 'Projects requiring Site Prep often need additional Lumber & Fasteners.'
+                };
+            case 'Security':
+                return {
+                    serviceLabel: 'Patrols',
+                    productLabel: 'Equipment',
+                    mainIcon: Shield,
+                    bundleText: 'Clients installing CCTV Systems usually add a monthly Monitoring Package.'
+                };
+            default:
+                return {
+                    serviceLabel: 'Services',
+                    productLabel: 'Products',
+                    mainIcon: Scissors,
+                    bundleText: 'Clients booking Deep Tissue Revitalizer are 35% more likely to buy Muscle Balm.'
+                };
+        }
+    };
+
+    const config = getIndustryConfig();
+    const MainIcon = config.mainIcon;
+
     return (
         <div className="bg-white dark:bg-[#211611] text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display pb-20 relative">
             {/* Header Section */}
@@ -84,7 +135,7 @@ const Services = () => {
                         <div className="text-[#de5c1b] cursor-pointer">
                             <Menu className="w-6 h-6" />
                         </div>
-                        <h1 className="text-xl font-bold tracking-tight">Catalog</h1>
+                        <h1 className="text-xl font-bold tracking-tight">Catalog: {industry}</h1>
                     </div>
                     <div className="flex items-center gap-3">
                         <button className="p-2 rounded-lg hover:bg-[#de5c1b]/10 transition-colors text-[#de5c1b]">
@@ -103,15 +154,15 @@ const Services = () => {
                             onClick={() => setActiveTab('services')}
                             className={`flex items-center gap-2 pb-3 border-b-2 transition-colors ${activeTab === 'services' ? 'border-[#de5c1b] text-[#de5c1b]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                         >
-                            <Scissors className="w-4 h-4" />
-                            <span className="font-bold text-sm">Services</span>
+                            <MainIcon className="w-4 h-4" />
+                            <span className="font-bold text-sm">{config.serviceLabel}</span>
                         </button>
                         <button
                             onClick={() => setActiveTab('products')}
                             className={`flex items-center gap-2 pb-3 border-b-2 transition-colors ${activeTab === 'products' ? 'border-[#de5c1b] text-[#de5c1b]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                         >
                             <Package className="w-4 h-4" />
-                            <span className="font-bold text-sm">Products</span>
+                            <span className="font-bold text-sm">{config.productLabel}</span>
                         </button>
                     </div>
                 </div>
@@ -126,7 +177,7 @@ const Services = () => {
                     <div className="flex-1 z-10">
                         <h3 className="text-sm font-bold text-[#de5c1b] uppercase tracking-wider mb-1">Smart Bundle Insight</h3>
                         <p className="text-sm text-slate-700 dark:text-slate-300">
-                            Clients booking <strong>Deep Tissue Revitalizer</strong> are 35% more likely to buy <strong>Muscle Balm</strong> if offered at checkout.
+                            {config.bundleText}
                         </p>
                         <button className="mt-2 text-xs font-bold text-[#de5c1b] hover:underline flex items-center gap-1">
                             Create Bundle Deal <Plus className="w-3 h-3" />
@@ -223,7 +274,7 @@ const Services = () => {
                     <div className="fixed inset-x-4 bottom-4 md:inset-0 md:flex md:items-center md:justify-center z-50 pointer-events-none">
                         <div className="bg-white dark:bg-[#211611] w-full md:w-96 rounded-2xl shadow-2xl overflow-hidden pointer-events-auto border border-[#de5c1b]/10">
                             <div className="p-4 border-b border-[#de5c1b]/10 flex justify-between items-center bg-[#de5c1b]/5">
-                                <h3 className="font-bold text-lg">Add New {activeTab === 'services' ? 'Service' : 'Product'}</h3>
+                                <h3 className="font-bold text-lg">Add New {activeTab === 'services' ? config.serviceLabel : config.productLabel}</h3>
                                 <button onClick={() => setIsAddModalOpen(false)} className="p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
                                     <X className="w-6 h-6 text-gray-500" />
                                 </button>
@@ -236,7 +287,7 @@ const Services = () => {
                                         value={newItemName}
                                         onChange={(e) => setNewItemName(e.target.value)}
                                         className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#de5c1b]"
-                                        placeholder="e.g., Summer Glow Facial"
+                                        placeholder={`e.g., New ${activeTab === 'services' ? 'Service' : 'Product'}`}
                                     />
                                 </div>
                                 <div className="flex gap-4">
@@ -271,30 +322,15 @@ const Services = () => {
                                         value={newItemCategory}
                                         onChange={(e) => setNewItemCategory(e.target.value)}
                                         className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#de5c1b]"
-                                        placeholder={activeTab === 'services' ? "e.g., Hair, Skin" : "e.g., Retail"}
+                                        placeholder="Type or select..."
                                     />
-                                    <datalist id="category-suggestions">
-                                        {activeTab === 'services' ? (
-                                            <>
-                                                <option value="Hair" />
-                                                <option value="Skin" />
-                                                <option value="Body" />
-                                                <option value="Consultation" />
-                                            </>
-                                        ) : (
-                                            <>
-                                                <option value="Retail" />
-                                                <option value="Professional" />
-                                                <option value="Merch" />
-                                            </>
-                                        )}
-                                    </datalist>
+                                    <DataListOptions activeTab={activeTab} industry={industry} />
                                 </div>
                                 <button
                                     onClick={handleAddItem}
                                     className="w-full py-3 bg-[#de5c1b] text-white font-bold rounded-xl mt-2 hover:bg-[#de5c1b]/90 transition-colors shadow-lg shadow-[#de5c1b]/20"
                                 >
-                                    Add {activeTab === 'services' ? 'Service' : 'Product'}
+                                    Add {activeTab === 'services' ? 'Item' : 'Product'}
                                 </button>
                             </div>
                         </div>
@@ -302,6 +338,33 @@ const Services = () => {
                 </>
             )}
         </div>
+    );
+};
+
+// Helper component for industry-aware suggestions
+const DataListOptions = ({ activeTab, industry }: { activeTab: string, industry: string }) => {
+    let options: string[] = [];
+
+    if (activeTab === 'services') {
+        switch (industry) {
+            case 'Healthcare': options = ['Consultation', 'Procedure', 'Therapy', 'Lab']; break;
+            case 'Construction': options = ['Labor', 'Planning', 'Installation', 'Demolition']; break;
+            case 'Security': options = ['Consultation', 'Installation', 'Patrol', 'Monitoring']; break;
+            default: options = ['Hair', 'Skin', 'Body', 'Consultation']; break;
+        }
+    } else {
+        switch (industry) {
+            case 'Healthcare': options = ['Supplies', 'Retail', 'Medication']; break;
+            case 'Construction': options = ['Materials', 'Fasteners', 'Gear', 'Tools']; break;
+            case 'Security': options = ['Hardware', 'Supplies', 'Electronics']; break;
+            default: options = ['Retail', 'Professional', 'Merch']; break;
+        }
+    }
+
+    return (
+        <datalist id="category-suggestions">
+            {options.map(opt => <option key={opt} value={opt} />)}
+        </datalist>
     );
 };
 

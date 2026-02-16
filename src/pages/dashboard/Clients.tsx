@@ -1,34 +1,37 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Menu,
     Contact,
     UserPlus,
     Search,
-    Phone,
-    MessageSquare,
-    Calendar,
     ChevronRight,
     History,
     StickyNote,
-    Edit,
     PlusCircle,
     Plus,
     X,
     Sparkles,
     Shield,
-    TrendingUp,
-    AlertCircle
+    AlertCircle,
+    MessageSquare
 } from 'lucide-react';
-import { mockClients, type Client } from '../../data/mockClients';
+import { getMockClients, type Client } from '../../data/mockClients';
+import { useVault } from '../../contexts/VaultContext';
 
 const Clients = () => {
+    const { industry } = useVault();
+    const [clients, setClients] = useState<Client[]>([]);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [userRole, setUserRole] = useState<'Manager' | 'Associate'>('Manager');
     const [searchTerm, setSearchTerm] = useState('');
-
     const [activeFilter, setActiveFilter] = useState('All');
 
-    const filteredClients = mockClients.filter(client => {
+    // Load clients based on industry
+    useEffect(() => {
+        setClients(getMockClients(industry));
+    }, [industry]);
+
+    const filteredClients = clients.filter(client => {
         const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             client.contactInfo.email.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -41,6 +44,18 @@ const Clients = () => {
         return true;
     });
 
+    // Dynamic Labels based on Industry
+    const getIndustryLabels = () => {
+        switch (industry) {
+            case 'Healthcare': return { client: 'Patient', visit: 'Appointment', spend: 'Billable' };
+            case 'Construction': return { client: 'Client', visit: 'Site Visit', spend: 'Project Value' };
+            case 'Security': return { client: 'Site', visit: 'Patrol', spend: 'Contract' };
+            case 'Logistics': return { client: 'Account', visit: 'Delivery', spend: 'Freight' };
+            default: return { client: 'Client', visit: 'Visit', spend: 'Spend' };
+        }
+    };
+    const labels = getIndustryLabels();
+
     return (
         <div className="bg-white dark:bg-[#211611] text-gray-900 dark:text-gray-100 min-h-screen flex flex-col font-display relative overflow-hidden">
             {/* Top Header */}
@@ -51,7 +66,7 @@ const Clients = () => {
                             <Menu className="w-8 h-8" />
                         </button>
                         <Contact className="text-[#de5c1b] w-8 h-8" />
-                        <h1 className="text-xl font-bold tracking-tight">Rolodex</h1>
+                        <h1 className="text-xl font-bold tracking-tight">Rolodex: {industry}</h1>
                     </div>
                     <div className="flex items-center gap-2">
                         {/* Role Toggle for Demo */}
@@ -71,7 +86,7 @@ const Clients = () => {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#de5c1b]/60 w-5 h-5" />
                     <input
                         className="w-full bg-[#de5c1b]/5 border border-[#de5c1b]/20 rounded-xl py-3 pl-10 pr-4 text-sm focus:ring-2 focus:ring-[#de5c1b] focus:border-transparent outline-none transition-all placeholder:text-gray-500"
-                        placeholder="Search clients by name, email..."
+                        placeholder={`Search ${labels.client.toLowerCase()}s by name...`}
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -84,11 +99,11 @@ const Clients = () => {
                             key={filter}
                             onClick={() => setActiveFilter(filter)}
                             className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${activeFilter === filter
-                                    ? 'bg-[#de5c1b] text-white'
-                                    : 'bg-[#de5c1b]/10 text-[#de5c1b] border border-[#de5c1b]/20 hover:bg-[#de5c1b]/20'
+                                ? 'bg-[#de5c1b] text-white'
+                                : 'bg-[#de5c1b]/10 text-[#de5c1b] border border-[#de5c1b]/20 hover:bg-[#de5c1b]/20'
                                 }`}
                         >
-                            {filter === 'All' ? 'All Clients' : filter}
+                            {filter === 'All' ? `All ${labels.client}s` : filter}
                         </button>
                     ))}
                 </div>
@@ -119,7 +134,7 @@ const Clients = () => {
                                     )}
                                 </div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                    Last visited: {new Date(client.stats.lastVisit).toLocaleDateString()}
+                                    Last {labels.visit}: {new Date(client.stats.lastVisit).toLocaleDateString()}
                                 </p>
                                 <div className="flex items-center gap-2 mt-2">
                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${client.loyaltyTier === 'VIP' ? 'bg-yellow-500/10 text-yellow-600' :
@@ -128,9 +143,6 @@ const Clients = () => {
                                         }`}>
                                         {client.loyaltyTier}
                                     </span>
-                                    {userRole === 'Manager' && client.riskScore && client.riskScore > 50 && (
-                                        <span className="text-[10px] text-red-500 font-bold">Risk Score: {client.riskScore}</span>
-                                    )}
                                 </div>
                             </div>
                             <ChevronRight className="text-gray-400 w-5 h-5 group-hover:text-[#de5c1b] transition-colors" />
@@ -157,7 +169,7 @@ const Clients = () => {
                     <div className="fixed inset-y-0 right-0 z-40 w-full md:w-[480px] bg-white dark:bg-[#211611] shadow-2xl overflow-y-auto transform transition-transform duration-300 ease-in-out border-l border-[#de5c1b]/10">
                         {/* Panel Header */}
                         <div className="sticky top-0 bg-white/90 dark:bg-[#211611]/90 backdrop-blur-md z-10 px-6 py-4 border-b border-[#de5c1b]/10 flex items-center justify-between">
-                            <h2 className="text-lg font-bold">Client Profile</h2>
+                            <h2 className="text-lg font-bold">{labels.client} Profile</h2>
                             <button
                                 onClick={() => setSelectedClient(null)}
                                 className="p-2 hover:bg-[#de5c1b]/10 rounded-full text-gray-500 hover:text-[#de5c1b] transition-colors"
@@ -180,11 +192,11 @@ const Clients = () => {
                                 {userRole === 'Manager' && (
                                     <div className="mt-6 flex gap-4 w-full">
                                         <div className="flex-1 bg-[#de5c1b]/5 rounded-xl p-3 border border-[#de5c1b]/10">
-                                            <span className="block text-xs uppercase text-gray-500 font-bold">Total Spend</span>
+                                            <span className="block text-xs uppercase text-gray-500 font-bold">Total {labels.spend}</span>
                                             <span className="block text-xl font-black text-[#de5c1b]">${selectedClient.stats.totalSpend.toLocaleString()}</span>
                                         </div>
                                         <div className="flex-1 bg-[#de5c1b]/5 rounded-xl p-3 border border-[#de5c1b]/10">
-                                            <span className="block text-xs uppercase text-gray-500 font-bold">Visits</span>
+                                            <span className="block text-xs uppercase text-gray-500 font-bold">{labels.visit}s</span>
                                             <span className="block text-xl font-black text-[#de5c1b]">{selectedClient.stats.visitCount}</span>
                                         </div>
                                     </div>

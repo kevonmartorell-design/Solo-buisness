@@ -3,8 +3,30 @@ import RevenueChart from '../../components/dashboard/RevenueChart';
 import SystemHealth from '../../components/dashboard/SystemHealth';
 import ActivityFeed from '../../components/dashboard/ActivityFeed';
 import { motion } from 'framer-motion';
+import { useVault } from '../../contexts/VaultContext';
 
 const Overview = () => {
+    const { industry } = useVault();
+
+    const getIndustryMetrics = () => {
+        switch (industry) {
+            case 'Healthcare':
+                return { active: 'Active Patients', icon: 'medical_services', unit: 'Patients' };
+            case 'Construction':
+                return { active: 'Active Jobs', icon: 'construction', unit: 'Sites' };
+            case 'Security':
+                return { active: 'Active Patrols', icon: 'security', unit: 'Routes' };
+            case 'Logistics':
+                return { active: 'Active Fleets', icon: 'local_shipping', unit: 'Vehicles' };
+            case 'Hospitality':
+                return { active: 'Open Tables', icon: 'restaurant', unit: 'Reservations' };
+            default:
+                return { active: 'Active Jobs', icon: 'work', unit: 'Jobs' };
+        }
+    };
+
+    const metrics = getIndustryMetrics();
+
     return (
         <div className="space-y-8">
             <motion.div
@@ -13,7 +35,10 @@ const Overview = () => {
                 transition={{ duration: 0.5 }}
                 className="flex items-center justify-between"
             >
-                <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Command Center</h1>
+                <div>
+                    <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Command Center</h1>
+                    <p className="text-white/40 text-sm font-medium tracking-wider">{industry.toUpperCase()} EDITION</p>
+                </div>
                 <p className="text-white/40 text-sm">System Status: <span className="text-[#de5c1b] font-bold">OPTIMAL</span></p>
             </motion.div>
 
@@ -28,11 +53,11 @@ const Overview = () => {
                     delay={0.1}
                 />
                 <MetricCard
-                    title="Active Jobs"
+                    title={metrics.active}
                     value="24"
                     trend="+4 new today"
                     trendUp={true}
-                    icon="construction"
+                    icon={metrics.icon}
                     delay={0.2}
                 />
                 <MetricCard

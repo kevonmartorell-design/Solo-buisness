@@ -36,134 +36,137 @@ export interface Client {
     };
 }
 
-export const mockClients: Client[] = [
-    {
-        id: '1',
-        name: 'Elena Rodriguez',
-        initials: 'ER',
-        avatarColor: 'bg-purple-100 text-purple-600',
-        contactInfo: {
-            phone: '+1 (555) 123-4567',
-            email: 'elena.r@example.com'
-        },
-        stats: {
-            totalSpend: 2840,
-            lastVisit: '2023-11-02',
-            visitCount: 14
-        },
-        status: 'Active',
-        loyaltyTier: 'VIP',
-        aiInsights: [
-            "Consistent monthly visitor for hair styling.",
-            "Usually buys products when suggested after service.",
-            "Suggest the new 'Lavender & Silk' serum - matches her preference profile."
-        ],
-        privateNotes: "Elena values privacy and prefers the corner chair. Always use the lavender-scented oils as she is allergic to citrus-based products. Mentioned her daughter's wedding coming up in December.",
-        history: [
-            { id: 'h1', date: '2023-11-02', serviceName: 'Premium Hair Styling & Color', price: 180, technician: 'Sarah' },
-            { id: 'h2', date: '2023-09-15', serviceName: 'Scalp Treatment & Massage', price: 95, technician: 'Mike' },
-            { id: 'h3', date: '2023-08-10', serviceName: 'Full Balayage', price: 250, technician: 'Sarah' }
-        ],
-        preferences: {
-            likes: ['Lavender', 'Quiet environment', 'Tea'],
-            dislikes: ['Citrus scents', 'Sales pressure'],
-            preferredTime: 'Morning'
-        }
-    },
-    {
-        id: '2',
-        name: 'Alexander Wright',
-        initials: 'AW',
-        avatarColor: 'bg-blue-100 text-blue-600',
-        contactInfo: {
-            phone: '+1 (555) 987-6543',
-            email: 'alex.w@example.com'
-        },
-        stats: {
-            totalSpend: 1250,
-            lastVisit: '2023-10-24',
-            visitCount: 8
-        },
-        status: 'Active',
-        loyaltyTier: 'Premium',
-        aiInsights: [
-            "Prefers quick, efficient services during lunch hours.",
-            "Potential upsell: Express Scalp Treatment."
-        ],
-        privateNotes: "Works nearby, always in a rush. Appreciates when we start exactly on time.",
-        history: [
-            { id: 'h4', date: '2023-10-24', serviceName: 'Men\'s Cut & Style', price: 45, technician: 'Mike' },
-            { id: 'h5', date: '2023-09-20', serviceName: 'Beard Trim', price: 25, technician: 'Mike' }
-        ],
-        preferences: {
-            likes: ['Efficiency', 'Online booking'],
-            dislikes: ['Waiting', 'Small talk'],
-            preferredTime: 'Lunch (12-2 PM)'
-        }
-    },
-    {
-        id: '3',
-        name: 'Marcus Chen',
-        initials: 'MC',
-        avatarColor: 'bg-green-100 text-green-600',
-        contactInfo: {
-            phone: '+1 (555) 456-7890',
-            email: 'marcus.c@example.com'
-        },
-        stats: {
-            totalSpend: 450,
-            lastVisit: '2023-08-12',
-            visitCount: 2
-        },
-        status: 'At Risk',
-        loyaltyTier: 'New',
-        riskScore: 75,
-        aiInsights: [
-            "Haven't seen Marcus in 3 months.",
-            "Churn Risk: High.",
-            "Action: Send 'We miss you' offer for 15% off next visit."
-        ],
-        privateNotes: "New client, moved to the area recently. Seemed hesitant about pricing.",
-        history: [
-            { id: 'h6', date: '2023-08-12', serviceName: 'Consultation', price: 0, technician: 'Sarah' },
-            { id: 'h7', date: '2023-08-15', serviceName: 'Starter Facial', price: 150, technician: 'Emily' }
-        ],
-        preferences: {
-            likes: ['Detailed explanations'],
-            dislikes: [],
-            preferredTime: 'Weekend'
-        }
-    },
-    {
-        id: '4',
-        name: 'Sarah Jenkins',
-        initials: 'SJ',
-        avatarColor: 'bg-yellow-100 text-yellow-600',
-        contactInfo: {
-            phone: '+1 (555) 111-2222',
-            email: 'sarah.j@example.com'
-        },
-        stats: {
-            totalSpend: 5600,
-            lastVisit: '2023-11-10',
-            visitCount: 24
-        },
-        status: 'Active',
-        loyaltyTier: 'VIP',
-        aiInsights: [
-            "Top 5% spender.",
-            "Loves the holiday specials.",
-            "Birthday coming up next week - prepare gift."
-        ],
-        privateNotes: "Very loyal. Brings coffee for the staff sometimes. Ask about her dog 'Buster'.",
-        history: [
-            { id: 'h8', date: '2023-11-10', serviceName: 'Full Package Spa Day', price: 450, technician: 'Multiple' },
-            { id: 'h9', date: '2023-10-15', serviceName: 'Manicure & Pedicure', price: 85, technician: 'Lisa' }
-        ],
-        preferences: {
-            likes: ['Pampering', 'Chatting'],
-            dislikes: ['Cold rooms'],
-            preferredTime: 'Afternoon'
-        }
+// --- Dynamic Data Generators ---
+
+const getInsightsForIndustry = (industry: string, name: string): string[] => {
+    switch (industry) {
+        case 'Healthcare':
+            return [
+                "Overdue for annual checkup.",
+                "Prescription renewal likely needed next visit.",
+                "Family history suggests higher frequency monitoring."
+            ];
+        case 'Construction':
+            return [
+                "Site safety briefing expires in 14 days.",
+                "High machinery usage recorded this month.",
+                "Project milestone 'Foundation' due next week."
+            ];
+        case 'Security':
+            return [
+                "Patrol route deviations detected on 3rd shift.",
+                "Incident report filed: 'Unlocked Gate' (Resolved).",
+                "Access control credentials expiring soon."
+            ];
+        case 'Logistics':
+            return [
+                "Fleet maintenance overdue for Vehicle #402.",
+                "Driver fatigue warnings flagged twice.",
+                "Fuel efficiency down 5% vs fleet average."
+            ];
+        case 'Hospitality':
+            return [
+                "Prefers window seat for dinner service.",
+                "Allergic to shellfish (Severe).",
+                "Anniversary coming up on Nov 12th."
+            ];
+        default: // General
+            return [
+                "Consistent monthly visitor.",
+                "Usually buys additional services when suggested.",
+                "Engagement score high."
+            ];
     }
-];
+};
+
+const getServicesForIndustry = (industry: string): { name: string, price: number }[] => {
+    switch (industry) {
+        case 'Healthcare':
+            return [
+                { name: 'General Consultation', price: 150 },
+                { name: 'Annual Physical', price: 200 },
+                { name: 'Specialist Referral', price: 50 }
+            ];
+        case 'Construction':
+            return [
+                { name: 'Site Inspection', price: 300 },
+                { name: 'Blueprint Review', price: 150 },
+                { name: 'Safety Audit', price: 500 }
+            ];
+        case 'Security':
+            return [
+                { name: 'Perimeter Check', price: 75 },
+                { name: 'Alarm Response', price: 120 },
+                { name: 'System Maintenance', price: 200 }
+            ];
+        case 'Logistics':
+            return [
+                { name: 'Route Optimization', price: 250 },
+                { name: 'Load Balancing', price: 100 },
+                { name: 'Emergency Dispatch', price: 400 }
+            ];
+        default:
+            return [
+                { name: 'Premium Service', price: 100 },
+                { name: 'Consultation', price: 50 },
+                { name: 'Maintenance', price: 75 }
+            ];
+    }
+};
+
+export const getMockClients = (industry: string = 'General'): Client[] => {
+    const services = getServicesForIndustry(industry);
+
+    // Base templates to modify based on industry
+    const baseClients = [
+        {
+            id: '1',
+            name: 'Elena Rodriguez',
+            initials: 'ER',
+            avatarColor: 'bg-purple-100 text-purple-600',
+            contactInfo: { phone: '+1 (555) 123-4567', email: 'elena.r@example.com' },
+            stats: { totalSpend: 2840, lastVisit: '2023-11-02', visitCount: 14 },
+            status: 'Active',
+            loyaltyTier: 'VIP',
+            privateNotes: "Key stakeholder. Very detail oriented.",
+            preferences: { likes: ['Detailed Reports', 'Early Morning'], dislikes: ['Rush jobs'], preferredTime: 'Morning' }
+        },
+        {
+            id: '2',
+            name: 'Alexander Wright',
+            initials: 'AW',
+            avatarColor: 'bg-blue-100 text-blue-600',
+            contactInfo: { phone: '+1 (555) 987-6543', email: 'alex.w@example.com' },
+            stats: { totalSpend: 1250, lastVisit: '2023-10-24', visitCount: 8 },
+            status: 'Active',
+            loyaltyTier: 'Premium',
+            privateNotes: "Prefers quick, concise updates.",
+            preferences: { likes: ['Digital First', 'SMS Updates'], dislikes: ['Paperwork'], preferredTime: 'Lunch' }
+        },
+        {
+            id: '3',
+            name: 'Marcus Chen',
+            initials: 'MC',
+            avatarColor: 'bg-green-100 text-green-600',
+            contactInfo: { phone: '+1 (555) 456-7890', email: 'marcus.c@example.com' },
+            stats: { totalSpend: 450, lastVisit: '2023-08-12', visitCount: 2 },
+            status: 'At Risk',
+            loyaltyTier: 'New',
+            riskScore: 75,
+            privateNotes: "New account, still onboarding.",
+            preferences: { likes: ['Clear Pricing'], dislikes: [], preferredTime: 'Weekend' }
+        }
+    ] as any[];
+
+    return baseClients.map(client => ({
+        ...client,
+        aiInsights: getInsightsForIndustry(industry, client.name),
+        history: [
+            { id: `h${client.id}1`, date: '2023-11-01', serviceName: services[0].name, price: services[0].price, technician: 'Staff' },
+            { id: `h${client.id}2`, date: '2023-10-15', serviceName: services[1].name, price: services[1].price, technician: 'Staff' }
+        ]
+    })) as Client[];
+};
+
+// Default export for backward compatibility
+export const mockClients = getMockClients('General');
