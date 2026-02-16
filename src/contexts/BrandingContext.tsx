@@ -20,7 +20,7 @@ const hexToRgb = (hex: string) => {
 
 export const BrandingProvider = ({ children }: { children: ReactNode }) => {
     // Load from local storage or default
-    const [companyName, setCompanyName] = useState(() => localStorage.getItem('companyName') || 'Sovereign');
+    const [companyName, setCompanyName] = useState(() => localStorage.getItem('companyName') || 'Aegis Cert');
     const [logoUrl, setLogoUrl] = useState<string | null>(() => localStorage.getItem('logoUrl'));
     const [primaryColor, setPrimaryColor] = useState(() => localStorage.getItem('primaryColor') || '#de5c1b');
 
@@ -46,7 +46,7 @@ export const BrandingProvider = ({ children }: { children: ReactNode }) => {
     }, [companyName, logoUrl, primaryColor]);
 
     const resetBranding = () => {
-        setCompanyName('Sovereign');
+        setCompanyName('Aegis Cert');
         setLogoUrl(null);
         setPrimaryColor('#de5c1b');
     };

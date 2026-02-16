@@ -15,14 +15,35 @@ import {
     ShieldCheck,
     Palette,
     Upload,
-    Type
+    Type,
+    Briefcase,
+    Plus,
+    Trash2
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBranding } from '../../contexts/BrandingContext';
+import { useVault } from '../../contexts/VaultContext';
+import { useState } from 'react';
 
 const Settings = () => {
     const { user, updateRole, updateTier } = useAuth();
     const { companyName, setCompanyName, logoUrl, setLogoUrl, primaryColor, setPrimaryColor, resetBranding } = useBranding();
+    const { industry, updateIndustry, customCategories, addCategory, deleteCategory } = useVault();
+
+    // Local state for new category
+    const [newCatName, setNewCatName] = useState('');
+    const [newCatColor, setNewCatColor] = useState('blue');
+
+    const handleAddCategory = () => {
+        if (newCatName.trim()) {
+            addCategory({
+                name: newCatName,
+                color: newCatColor,
+                icon: 'Folder' // Default icon
+            });
+            setNewCatName('');
+        }
+    };
     return (
         <div className="bg-[#f8f6f6] dark:bg-[#211611] font-display text-gray-900 dark:text-gray-100 min-h-screen flex flex-col">
             {/* Header */}
@@ -245,6 +266,86 @@ const Settings = () => {
                             >
                                 Reset to Default
                             </button>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Section: Industry & Compliance */}
+                <section className="mt-8">
+                    <h2 className="px-6 text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em] mb-2">Industry & Compliance</h2>
+                    <div className="bg-white/5 dark:bg-white/5 mx-4 rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent p-4 space-y-6">
+                        {/* Industry Selection */}
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Primary Industry</label>
+                            <div className="relative">
+                                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <select
+                                    value={industry}
+                                    onChange={(e) => updateIndustry(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-medium focus:ring-2 focus:ring-[#de5c1b] outline-none appearance-none"
+                                >
+                                    <option value="General">General Business</option>
+                                    <option value="Security">Security & Protection</option>
+                                    <option value="Healthcare">Healthcare & Medical</option>
+                                    <option value="Construction">Construction & Trades</option>
+                                    <option value="Logistics">Logistics & Transport</option>
+                                    <option value="Hospitality">Hospitality & Food Service</option>
+                                </select>
+                            </div>
+                            <p className="text-[10px] text-gray-500 mt-2">
+                                * Sets the AI context for compliance requirements.
+                            </p>
+                        </div>
+
+                        {/* Custom Categories */}
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Document Categories</label>
+                            <div className="space-y-2 mb-4">
+                                {customCategories.map(cat => (
+                                    <div key={cat.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-100 dark:border-white/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-3 h-3 rounded-full bg-${cat.color}-500`}></div>
+                                            <span className="text-sm font-bold">{cat.name}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => deleteCategory(cat.id)}
+                                            className="text-gray-400 hover:text-red-500 transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Add New Category */}
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={newCatName}
+                                    onChange={(e) => setNewCatName(e.target.value)}
+                                    placeholder="New Category Name..."
+                                    className="flex-1 px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-[#de5c1b] outline-none"
+                                />
+                                <select
+                                    value={newCatColor}
+                                    onChange={(e) => setNewCatColor(e.target.value)}
+                                    className="px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm focus:ring-2 focus:ring-[#de5c1b] outline-none"
+                                >
+                                    <option value="blue">Blue</option>
+                                    <option value="orange">Orange</option>
+                                    <option value="emerald">Green</option>
+                                    <option value="purple">Purple</option>
+                                    <option value="red">Red</option>
+                                    <option value="cyan">Cyan</option>
+                                </select>
+                                <button
+                                    onClick={handleAddCategory}
+                                    disabled={!newCatName.trim()}
+                                    className="bg-[#de5c1b] text-white p-2 rounded-lg hover:bg-[#de5c1b]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Plus className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </section>

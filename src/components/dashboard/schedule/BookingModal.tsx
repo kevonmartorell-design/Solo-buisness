@@ -1,16 +1,19 @@
+
 import { useState, useEffect } from 'react';
-import { X, AlertCircle } from 'lucide-react';
-import type { Resource, EventType } from '../../../types/schedule';
+import { X, AlertCircle, Trash2 } from 'lucide-react';
+import type { Resource, EventType, Event } from '../../../types/schedule';
 
 interface BookingModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (data: any) => void;
+    onDelete?: (id: string) => void;
+    initialData?: Event | null;
     error: string | null;
     resources: Resource[];
 }
 
-const BookingModal = ({ isOpen, onClose, onSave, error, resources }: BookingModalProps) => {
+const BookingModal = ({ isOpen, onClose, onSave, onDelete, initialData, error, resources }: BookingModalProps) => {
     const [title, setTitle] = useState('');
     const [type, setType] = useState<EventType | 'TimeOff'>('Strategy');
     const [startTime, setStartTime] = useState('09:00');
@@ -18,28 +21,38 @@ const BookingModal = ({ isOpen, onClose, onSave, error, resources }: BookingModa
     const [assignedTo, setAssignedTo] = useState<string>('');
     const [notes, setNotes] = useState('');
 
-    // Reset form when opening
+    // Initialize form with data or defaults
     useEffect(() => {
         if (isOpen) {
-            setTitle('');
-            setType('Strategy');
-            setStartTime('09:00');
-            setEndTime('10:00');
-            setAssignedTo('');
-            setNotes('');
+            if (initialData) {
+                setTitle(initialData.title);
+                setType(initialData.type);
+                setStartTime(initialData.startTime);
+                setEndTime(initialData.endTime);
+                setAssignedTo(initialData.resourceId || '');
+                setNotes(initialData.notes || '');
+            } else {
+                setTitle('');
+                setType('Strategy');
+                setStartTime('09:00');
+                setEndTime('10:00');
+                setAssignedTo('');
+                setNotes('');
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, initialData]);
 
     if (!isOpen) return null;
 
     const isTimeOff = type === 'TimeOff';
+    const isEditing = !!initialData;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <div className="bg-white dark:bg-[#211611] rounded-2xl shadow-2xl border border-[#de5c1b]/20 w-full max-w-md p-6 m-4 animate-in fade-in zoom-in duration-200">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                        {isTimeOff ? 'Request Time Off' : 'Create Shift / Event'}
+                        {isEditing ? 'Edit Event' : (isTimeOff ? 'Request Time Off' : 'Create Shift / Event')}
                     </h2>
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-[#de5c1b]/10 rounded-full transition-colors">
                         <X className="w-5 h-5 text-slate-500" />
@@ -133,6 +146,15 @@ const BookingModal = ({ isOpen, onClose, onSave, error, resources }: BookingModa
                 </div>
 
                 <div className="flex gap-3 mt-8">
+                    {isEditing && onDelete && (
+                        <button
+                            onClick={() => onDelete(initialData.id)}
+                            className="p-2.5 rounded-xl border border-red-200 hover:bg-red-50 text-red-500 transition-colors"
+                            title="Delete Event"
+                        >
+                            <Trash2 className="w-5 h-5" />
+                        </button>
+                    )}
                     <button
                         onClick={onClose}
                         className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/5 font-medium text-slate-600 dark:text-slate-300 transition-colors"
@@ -140,11 +162,11 @@ const BookingModal = ({ isOpen, onClose, onSave, error, resources }: BookingModa
                         Cancel
                     </button>
                     <button
-                        onClick={() => onSave({ title, type, startTime, endTime, assignedTo, notes })}
+                        onClick={() => onSave({ ...initialData, title, type, startTime, endTime, assignedTo, notes })}
                         disabled={!title}
                         className="flex-1 py-2.5 rounded-xl bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-medium shadow-lg shadow-[#de5c1b]/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isTimeOff ? 'Request Time Off' : 'Save Slot'}
+                        {isEditing ? 'Update Event' : (isTimeOff ? 'Request Time Off' : 'Save Slot')}
                     </button>
                 </div>
             </div>

@@ -54,7 +54,7 @@ const Login = () => {
                                 </div>
                                 <input
                                     className="w-full bg-[#261f1c] border border-industrial-silver/20 rounded-lg py-3.5 pl-11 pr-4 text-white placeholder:text-industrial-silver/30 focus:outline-none focus:ring-1 focus:ring-[#de5c1b] focus:border-[#de5c1b] transition-all"
-                                    placeholder="operator@resilience.io"
+                                    placeholder="operator@aegiscert.io"
                                     type="email"
                                 />
                             </div>
@@ -105,7 +105,7 @@ const Login = () => {
                 {/* Footer / Sign Up Link */}
                 <div className="mt-8 text-center">
                     <p className="text-industrial-silver/60 text-sm">
-                        New to the Resilience?
+                        New to Aegis Cert?
                         <a
                             onClick={() => navigate('/signup')}
                             className="text-white hover:text-primary font-semibold underline underline-offset-4 ml-1 transition-colors cursor-pointer"

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import {
     Menu,
@@ -55,10 +56,11 @@ const Schedule = () => {
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [filterDept, setFilterDept] = useState('All');
     const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+    const [editingEvent, setEditingEvent] = useState<Event | null>(null);
 
     // Feedback Toast Helper
-    const showFeedback = (message: string) => {
-        setFeedbackMessage(message);
+    const showFeedback = (message: string, type: 'success' | 'error' = 'success') => {
+        setFeedbackMessage(message); // Could extend to handle type for styling
         setTimeout(() => setFeedbackMessage(null), 3000);
     };
 
@@ -78,7 +80,41 @@ const Schedule = () => {
 
     const [events, setEvents] = useState<Event[]>(generateMockEvents());
 
+    // --- Conflict Detection ---
+
+    const checkForConflicts = (resourceId: string | undefined, startTime: string, endTime: string, date: Date, excludeEventId?: string) => {
+        if (!resourceId) return false; // Open shifts don't have conflicts in this simple model
+
+        const startMins = timeToMinutes(startTime);
+        const endMins = timeToMinutes(endTime);
+
+        return events.some(event => {
+            if (event.id === excludeEventId) return false; // Don't check against self
+            if (event.resourceId !== resourceId) return false; // Check only for this resource
+            if (!isSameDay(event.date, date)) return false; // Check only for this day
+            if (event.status === 'declined') return false; // Ignore declined events
+
+            const eventStart = timeToMinutes(event.startTime);
+            const eventEnd = timeToMinutes(event.endTime);
+
+            // Overlap logic: (StartA < EndB) and (EndA > StartB)
+            return (startMins < eventEnd && endMins > eventStart);
+        });
+    };
+
     // --- Handlers ---
+
+    const handleOpenCreateModal = () => {
+        setEditingEvent(null);
+        setBookingError(null);
+        setIsBookingModalOpen(true);
+    };
+
+    const handleEditEvent = (event: Event) => {
+        setEditingEvent(event);
+        setBookingError(null);
+        setIsBookingModalOpen(true);
+    };
 
     const handleSaveEvent = (data: any) => {
         setBookingError(null);
@@ -90,26 +126,61 @@ const Schedule = () => {
             return;
         }
 
-        const newEvent: Event = {
-            id: Date.now().toString(),
-            title: data.title,
-            type: data.type,
-            startTime: data.startTime,
-            endTime: data.endTime,
-            duration: calculateDuration(data.startTime, data.endTime),
-            date: new Date(selectedDate),
-            status: data.type === 'TimeOff' ? 'pending' : (data.assignedTo ? 'approved' : 'open'),
-            resourceId: data.assignedTo || undefined,
-            requester: data.type === 'TimeOff' ? 'Current User' : undefined, // Mock
-            notes: data.notes
-        };
+        const resourceId = data.assignedTo || undefined;
 
-        setEvents([...events, newEvent]);
+        // Check for conflicts
+        if (checkForConflicts(resourceId, data.startTime, data.endTime, selectedDate, editingEvent?.id)) {
+            setBookingError('This resource is already booked for this time slot.');
+            return;
+        }
+
+        if (editingEvent) {
+            // Update existing event
+            const updatedEvent: Event = {
+                ...editingEvent,
+                title: data.title,
+                type: data.type,
+                startTime: data.startTime,
+                endTime: data.endTime,
+                duration: calculateDuration(data.startTime, data.endTime),
+                resourceId: resourceId,
+                notes: data.notes,
+                // If re-assigning, keep status but maybe reset swap request? Keeping simple for now.
+            };
+            setEvents(events.map(e => e.id === editingEvent.id ? updatedEvent : e));
+            showFeedback('Event updated successfully');
+        } else {
+            // Create new event
+            const newEvent: Event = {
+                id: Date.now().toString(),
+                title: data.title,
+                type: data.type,
+                startTime: data.startTime,
+                endTime: data.endTime,
+                duration: calculateDuration(data.startTime, data.endTime),
+                date: new Date(selectedDate),
+                status: data.type === 'TimeOff' ? 'pending' : (data.assignedTo ? 'approved' : 'open'),
+                resourceId: resourceId,
+                requester: data.type === 'TimeOff' ? 'Current User' : undefined, // Mock
+                notes: data.notes
+            };
+            setEvents([...events, newEvent]);
+            showFeedback(data.type === 'TimeOff' ? 'Time off request submitted!' : 'Shift created successfully');
+        }
+
         setIsBookingModalOpen(false);
-        showFeedback(data.type === 'TimeOff' ? 'Time off request submitted!' : 'Shift created successfully');
+    };
+
+    const handleDeleteEvent = (id: string) => {
+        if (confirm('Are you sure you want to delete this event?')) {
+            setEvents(events.filter(e => e.id !== id));
+            setIsBookingModalOpen(false);
+            showFeedback('Event deleted');
+        }
     };
 
     const handleClaimShift = (id: string, resourceId: string) => {
+        // Quick claim logic - assumes current user (r1) availability checked elsewhere or lenient here
         setEvents(events.map(e => e.id === id ? { ...e, status: 'approved', resourceId: 'r1' } : e)); // Mock assigning to 'current user' (r1)
         showFeedback('Shift claimed successfully');
     };
@@ -147,6 +218,12 @@ const Schedule = () => {
         const event = events.find(ev => ev.id === eventId);
 
         if (event) {
+            // Check for conflicts on the target resource
+            if (checkForConflicts(resourceId, event.startTime, event.endTime, event.date, event.id)) {
+                showFeedback(`Conflict detected! ${MOCK_RESOURCES.find(r => r.id === resourceId)?.name} is busy.`, 'error');
+                return;
+            }
+
             // Update event with new resource
             setEvents(events.map(ev =>
                 ev.id === eventId
@@ -163,7 +240,7 @@ const Schedule = () => {
     const filteredResources = filterDept === 'All' ? MOCK_RESOURCES : MOCK_RESOURCES.filter(r => r.department === filterDept);
 
     const weekDays = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date();
+        const d = new Date(); // In real app, start from current week start
         d.setDate(new Date().getDate() + i);
         return d;
     });
@@ -211,7 +288,7 @@ const Schedule = () => {
                                 <CalendarIcon className="w-4 h-4" />
                             </button>
                         </div>
-                        <button onClick={() => setIsBookingModalOpen(true)} className="bg-[#de5c1b] text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-[#de5c1b]/20 hover:bg-[#de5c1b]/90 transition-colors flex items-center gap-2">
+                        <button onClick={handleOpenCreateModal} className="bg-[#de5c1b] text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg shadow-[#de5c1b]/20 hover:bg-[#de5c1b]/90 transition-colors flex items-center gap-2">
                             <Plus className="w-4 h-4" /> Request / Add
                         </button>
                     </div>
@@ -257,12 +334,20 @@ const Schedule = () => {
                                         <p className="font-bold text-slate-700 dark:text-slate-200">{e.title}</p>
                                         <p className="text-xs text-slate-500">{e.startTime} - {e.endTime} • {e.duration}</p>
                                     </div>
-                                    <button
-                                        onClick={() => handleClaimShift(e.id, 'r1')}
-                                        className="text-xs font-bold text-[#de5c1b] hover:underline"
-                                    >
-                                        Claim
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => handleEditEvent(e)}
+                                            className="text-xs font-bold text-slate-400 hover:text-[#de5c1b]"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleClaimShift(e.id, 'r1')}
+                                            className="text-xs font-bold text-[#de5c1b] hover:underline"
+                                        >
+                                            Claim
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                             {filteredEvents.filter(e => e.status === 'open').length === 0 && (
@@ -328,6 +413,7 @@ const Schedule = () => {
                                         event={event}
                                         resource={resource}
                                         onSwapRequest={handleSwapRequest}
+                                        onEdit={handleEditEvent}
                                     />
                                 );
                             })}
@@ -385,6 +471,7 @@ const Schedule = () => {
                                                         key={event.id}
                                                         draggable
                                                         onDragStart={(e) => handleDragStart(e, event.id)}
+                                                        onClick={() => handleEditEvent(event)} // Enable edit on click
                                                         className={`absolute top-1 bottom-1 rounded-md px-2 flex items-center shadow-sm cursor-grab active:cursor-grabbing hover:brightness-110 transition-all z-10 ${event.type === 'Shift' ? 'bg-indigo-500 text-white' :
                                                             event.type === 'Strategy' ? 'bg-[#de5c1b] text-white' :
                                                                 event.type === 'TimeOff' ? 'bg-slate-400 text-white' :
@@ -411,6 +498,8 @@ const Schedule = () => {
                 isOpen={isBookingModalOpen}
                 onClose={() => setIsBookingModalOpen(false)}
                 onSave={handleSaveEvent}
+                onDelete={handleDeleteEvent}
+                initialData={editingEvent}
                 error={bookingError}
                 resources={MOCK_RESOURCES}
             />

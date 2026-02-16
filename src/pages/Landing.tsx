@@ -16,7 +16,7 @@ const Landing = () => {
                         <div className="w-8 h-8 bg-[#de5c1b] rounded flex items-center justify-center text-white">
                             <span className="material-symbols-outlined text-xl">precision_manufacturing</span>
                         </div>
-                        <span className="text-xl font-bold tracking-tighter uppercase text-white">Workforce</span>
+                        <span className="text-xl font-bold tracking-tighter uppercase text-white">Aegis Cert</span>
                     </div>
                     <div className="hidden md:flex gap-8 text-sm font-medium text-white/60 uppercase tracking-widest">
                         <a className="hover:text-[#de5c1b] transition-colors cursor-pointer">Systems</a>
@@ -165,7 +165,7 @@ const Landing = () => {
                         <div className="w-full md:w-1/2">
                             <h2 className="text-4xl font-bold text-white mb-6 tracking-tight uppercase">Intelligent Business Management</h2>
                             <p className="text-white/60 mb-8 leading-relaxed">
-                                Streamline your operations with a platform that adapts to your scale. From solo entrepreneurs to multi-unit enterprises, Workforce provides the tools to manage your team, clients, and finances in one unified ecosystem.
+                                Streamline your operations with a platform that adapts to your scale. From solo entrepreneurs to multi-unit enterprises, Aegis Cert provides the tools to manage your team, clients, and finances in one unified ecosystem.
                             </p>
                             <ul className="space-y-4">
                                 <li className="flex items-center gap-3 text-white/80 font-medium">
@@ -254,7 +254,7 @@ const Landing = () => {
                             <span className="material-symbols-outlined text-4xl text-white mb-6">palette</span>
                             <h3 className="text-xl font-bold text-white mb-3">Total Aesthetic Control</h3>
                             <p className="text-white/60 text-sm">
-                                Swap the standard "Workforce Blue" for your brand's "Construction Orange". Customize logos, app icons, and loading screens.
+                                Swap the standard "Aegis Cert Blue" for your brand's "Construction Orange". Customize logos, app icons, and loading screens.
                             </p>
                         </div>
                         <div className="p-8 border-l-2 border-[#de5c1b] bg-black/20 hover:bg-black/40 transition-colors">
@@ -268,7 +268,7 @@ const Landing = () => {
                             <span className="material-symbols-outlined text-4xl text-white mb-6">campaign</span>
                             <h3 className="text-xl font-bold text-white mb-3">Branded Voice</h3>
                             <p className="text-white/60 text-sm">
-                                Automated SMS and emails come from *you*. "Powered by Workforce" removal options available.
+                                Automated SMS and emails come from *you*. "Powered by Aegis Cert" removal options available.
                             </p>
                         </div>
                     </div>
@@ -351,7 +351,7 @@ const Landing = () => {
                             <div className="w-6 h-6 bg-[#de5c1b] rounded flex items-center justify-center text-white">
                                 <span className="material-symbols-outlined text-sm">precision_manufacturing</span>
                             </div>
-                            <span className="text-lg font-bold tracking-tighter uppercase text-white">Workforce</span>
+                            <span className="text-lg font-bold tracking-tighter uppercase text-white">Aegis Cert</span>
                         </div>
                         <p className="text-silver text-sm max-w-sm mb-6">
                             Leading the global shift toward intelligent workforce management through data-driven design and operational superiority.
@@ -388,7 +388,7 @@ const Landing = () => {
                     </div>
                 </div>
                 <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-silver/5 flex flex-col md:flex-row justify-between gap-4 text-silver/40 text-[10px] uppercase tracking-widest">
-                    <p>© 2026 Workforce Systems Inc. All Rights Reserved.</p>
+                    <p>© 2026 Aegis Cert Systems Inc. All Rights Reserved.</p>
                     <p>Built with Precision in Code & Design.</p>
                 </div>
             </footer>

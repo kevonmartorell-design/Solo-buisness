@@ -1,13 +1,15 @@
-import { ArrowLeftRight, Clock, User } from 'lucide-react';
+
+import { ArrowLeftRight, Clock, User, Pencil } from 'lucide-react';
 import type { Event, Resource } from '../../../types/schedule';
 
 interface EventCardProps {
     event: Event;
     resource?: Resource;
     onSwapRequest: (id: string) => void;
+    onEdit?: (event: Event) => void;
 }
 
-const EventCard = ({ event, resource, onSwapRequest }: EventCardProps) => {
+const EventCard = ({ event, resource, onSwapRequest, onEdit }: EventCardProps) => {
     const isTimeOff = event.type === 'TimeOff';
 
     // Status Styles
@@ -46,16 +48,27 @@ const EventCard = ({ event, resource, onSwapRequest }: EventCardProps) => {
                 </div>
 
                 {/* Actions */}
-                {!isTimeOff && event.status === 'approved' && (
-                    <div className="mt-3 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-3 flex justify-end items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {onEdit && (
+                        <button
+                            onClick={() => onEdit(event)}
+                            className="text-xs font-bold text-slate-400 hover:text-[#de5c1b] flex items-center gap-1"
+                            title="Edit Event"
+                        >
+                            <Pencil className="w-3 h-3" /> Edit
+                        </button>
+                    )}
+                    {!isTimeOff && event.status === 'approved' && (
                         <button
                             onClick={() => onSwapRequest(event.id)}
                             className="text-xs font-bold text-slate-400 hover:text-[#de5c1b] flex items-center gap-1"
+                            title="Request Swap"
                         >
                             <ArrowLeftRight className="w-3 h-3" /> Request Swap
                         </button>
-                    </div>
-                )}
+                    )}
+                </div>
+
                 {event.status === 'swap-requested' && (
                     <div className="mt-2 text-[10px] font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/20 px-2 py-1 rounded inline-block">
                         Swap Requested
