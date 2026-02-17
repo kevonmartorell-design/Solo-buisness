@@ -1,15 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBranding } from '../../contexts/BrandingContext';
+import { supabase } from '../../lib/supabase';
 
 const Login = () => {
     const navigate = useNavigate();
     const { companyName, logoUrl } = useBranding();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Implement actual login logic
-        navigate('/dashboard');
+        setLoading(true);
+        setError(null);
+
+        const formData = new FormData(e.currentTarget as HTMLFormElement);
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
+
+        try {
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (error) throw error;
+            navigate('/dashboard');
+        } catch (err: any) {
+            console.error('Login error:', err);
+            setError(err.message || 'Failed to login');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -44,6 +66,13 @@ const Login = () => {
                 {/* Login Card */}
                 <div className="w-full bg-industrial-charcoal/80 backdrop-blur-md border border-industrial-silver/10 rounded-xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                     <h2 className="text-white text-xl font-semibold mb-6">Welcome Back</h2>
+
+                    {error && (
+                        <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-lg text-sm">
+                            {error}
+                        </div>
+                    )}
+
                     <form className="space-y-5" onSubmit={handleLogin}>
                         {/* Email Field */}
                         <div className="flex flex-col gap-2">
@@ -53,6 +82,8 @@ const Login = () => {
                                     <span className="material-symbols-outlined text-industrial-silver/40 text-xl group-focus-within:text-primary transition-colors">mail</span>
                                 </div>
                                 <input
+                                    name="email"
+                                    required
                                     className="w-full bg-[#261f1c] border border-industrial-silver/20 rounded-lg py-3.5 pl-11 pr-4 text-white placeholder:text-industrial-silver/30 focus:outline-none focus:ring-1 focus:ring-[#de5c1b] focus:border-[#de5c1b] transition-all"
                                     placeholder="operator@aegiscert.io"
                                     type="email"
@@ -71,6 +102,8 @@ const Login = () => {
                                     <span className="material-symbols-outlined text-industrial-silver/40 text-xl group-focus-within:text-primary transition-colors">lock</span>
                                 </div>
                                 <input
+                                    name="password"
+                                    required
                                     className="w-full bg-[#261f1c] border border-industrial-silver/20 rounded-lg py-3.5 pl-11 pr-12 text-white placeholder:text-industrial-silver/30 focus:outline-none focus:ring-1 focus:ring-[#de5c1b] focus:border-[#de5c1b] transition-all"
                                     placeholder="••••••••"
                                     type="password"
@@ -86,11 +119,12 @@ const Login = () => {
 
                         {/* Login Button */}
                         <button
-                            className="w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-4 rounded-lg shadow-lg shadow-[#de5c1b]/20 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-2"
+                            disabled={loading}
+                            className={`w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-4 rounded-lg shadow-lg shadow-[#de5c1b]/20 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                             type="submit"
                         >
                             <span className="material-symbols-outlined text-xl">login</span>
-                            LOGIN TO TERMINAL
+                            {loading ? 'LOGGING IN...' : 'LOGIN TO TERMINAL'}
                         </button>
                     </form>
 

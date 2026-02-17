@@ -15,22 +15,119 @@ import {
     AlertCircle,
     MessageSquare
 } from 'lucide-react';
-import { getMockClients, type Client } from '../../data/mockClients';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { useVault } from '../../contexts/VaultContext';
+
+// Define Client interface here since we removed the mock file import
+interface Client {
+    id: string;
+    name: string;
+    initials: string;
+    contactInfo: {
+        email: string;
+        phone: string;
+    };
+    status: string;
+    loyaltyTier: string;
+    avatarColor: string;
+    stats: {
+        totalSpend: number;
+        visitCount: number;
+        lastVisit: string;
+    };
+    aiInsights: string[];
+    privateNotes: string;
+    preferences: {
+        likes: string[];
+        dislikes: string[];
+    };
+    history: any[];
+}
 
 const Clients = () => {
     const { industry } = useVault();
     const [clients, setClients] = useState<Client[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [userRole, setUserRole] = useState<'Manager' | 'Associate'>('Manager');
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
+    const { user } = useAuth(); // Get user from context
 
-    // Load clients based on industry
+    // Load clients from Supabase
     useEffect(() => {
-        setClients(getMockClients(industry));
-    }, [industry]);
+        const fetchClients = async () => {
+            if (!user) return;
 
+            try {
+                // Get Org ID
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('organization_id')
+                    .eq('id', user.id)
+                    .single();
+
+                if (!profile?.organization_id) {
+                    setLoading(false);
+                    return;
+                }
+                const orgId = profile.organization_id;
+
+                const { data: clientData, error } = await supabase
+                    .from('clients')
+                    .select('id, name, email, phone, status, created_at')
+                    .eq('organization_id', orgId);
+
+                if (error) throw error;
+
+                const mappedClients: Client[] = clientData.map((c: any) => ({
+                    id: c.id,
+                    name: c.name || 'Unknown Client',
+                    initials: c.name ? c.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : '??',
+                    contactInfo: {
+                        email: c.email || 'N/A',
+                        phone: c.phone || 'N/A'
+                    },
+                    status: c.status || 'Active', // Default if null
+                    loyaltyTier: 'New', // Default
+                    avatarColor: 'bg-emerald-100 text-emerald-600', // Default
+                    stats: {
+                        totalSpend: 0, // Placeholder
+                        visitCount: 0,
+                        lastVisit: new Date().toISOString() // Placeholder
+                    },
+                    aiInsights: [], // Placeholder
+                    privateNotes: '', // Placeholder
+                    preferences: { likes: [], dislikes: [] }, // Placeholder
+                    history: [] // Placeholder
+                }));
+
+                setClients(mappedClients);
+
+            } catch (err) {
+                console.error('Error fetching clients:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchClients();
+    }, [user, industry]); // Re-fetch if user changes (industry dep kept for effect consistency if needed later)
+
+    // Loading State
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#151210]">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-[#de5c1b] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-500 font-medium">Loading clients...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Filter Logic
     const filteredClients = clients.filter(client => {
         const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             client.contactInfo.email.toLowerCase().includes(searchTerm.toLowerCase());

@@ -15,16 +15,41 @@ import {
     Stethoscope,
     Shield
 } from 'lucide-react';
-import { getMockServices, type Service } from '../../data/mockServices';
-import { getMockProducts, type Product } from '../../data/mockProducts';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { useVault } from '../../contexts/VaultContext';
+
+// Define types locally
+interface Service {
+    id: string;
+    name: string;
+    category: string;
+    price: number;
+    duration: number;
+    description: string;
+    imageColor: string;
+}
+
+interface Product {
+    id: string;
+    name: string;
+    category: string;
+    price: number;
+    stock: number;
+    reorderPoint: number;
+    sku: string;
+    description: string;
+    imageColor: string;
+}
 
 const Services = () => {
     const { industry } = useVault();
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<'services' | 'products'>('services');
 
     const [localServices, setLocalServices] = useState<Service[]>([]);
     const [localProducts, setLocalProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
 
     // Search & Filter State
     const [searchTerm, setSearchTerm] = useState('');
@@ -36,11 +61,83 @@ const Services = () => {
     const [newItemCategory, setNewItemCategory] = useState('');
     const [newItemExtra, setNewItemExtra] = useState(''); // Duration or Stock
 
-    // Load data based on industry
+    // Load data
     useEffect(() => {
-        setLocalServices(getMockServices(industry));
-        setLocalProducts(getMockProducts(industry));
-    }, [industry]);
+        const fetchData = async () => {
+            if (!user) return;
+            try {
+                // Get Org ID
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('organization_id')
+                    .eq('id', user.id)
+                    .single();
+
+                if (!profile?.organization_id) {
+                    setLoading(false);
+                    return;
+                }
+                const orgId = profile.organization_id;
+
+                // Fetch Services
+                const { data: servicesData } = await supabase
+                    .from('services')
+                    .select('*')
+                    .eq('organization_id', orgId);
+
+                if (servicesData) {
+                    setLocalServices(servicesData.map((s: any) => ({
+                        id: s.id,
+                        name: s.name,
+                        category: s.category || 'General',
+                        price: s.price || 0,
+                        duration: s.duration || 60,
+                        description: s.description || '',
+                        imageColor: s.image_url || 'bg-slate-100' // Using image_url to store color class for now
+                    })));
+                }
+
+                // Fetch Products
+                const { data: productsData } = await supabase
+                    .from('products')
+                    .select('*')
+                    .eq('organization_id', orgId);
+
+                if (productsData) {
+                    setLocalProducts(productsData.map((p: any) => ({
+                        id: p.id,
+                        name: p.name,
+                        category: p.category || 'General',
+                        price: p.price || 0,
+                        stock: p.stock || 0,
+                        reorderPoint: p.reorder_point || 5,
+                        sku: p.sku || '',
+                        description: p.description || '',
+                        imageColor: p.image_url || 'bg-slate-100'
+                    })));
+                }
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [user, industry]);
+
+    // Loading State
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#211611]">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-[#de5c1b] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-500 font-medium">Loading catalog...</p>
+                </div>
+            </div>
+        );
+    }
 
     const filteredServices = localServices.filter(s =>
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -52,41 +149,86 @@ const Services = () => {
         p.category.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleAddItem = () => {
-        if (!newItemName || !newItemPrice) return; // Minimal validation
+    const handleAddItem = async () => {
+        if (!newItemName || !newItemPrice || !user) return;
 
-        if (activeTab === 'services') {
-            const newService: Service = {
-                id: `new-${Date.now()}`,
-                name: newItemName,
-                category: newItemCategory || 'General',
-                price: parseFloat(newItemPrice),
-                duration: parseInt(newItemExtra) || 60,
-                description: 'Newly added service.',
-                imageColor: 'bg-slate-100'
-            };
-            setLocalServices([newService, ...localServices]);
-        } else {
-            const newProduct: Product = {
-                id: `new-${Date.now()}`,
-                name: newItemName,
-                category: newItemCategory || 'General',
-                price: parseFloat(newItemPrice),
-                stock: parseInt(newItemExtra) || 0,
-                reorderPoint: 5,
-                sku: `NEW-${Date.now().toString().slice(-4)}`,
-                description: 'Newly added product.',
-                imageColor: 'bg-slate-100'
-            };
-            setLocalProducts([newProduct, ...localProducts]);
+        try {
+            // Get Org ID
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('organization_id')
+                .eq('id', user.id)
+                .single();
+
+            if (!profile?.organization_id) return;
+            const orgId = profile.organization_id;
+
+            if (activeTab === 'services') {
+                const newService = {
+                    organization_id: orgId,
+                    name: newItemName,
+                    category: newItemCategory || 'General',
+                    price: parseFloat(newItemPrice),
+                    duration: parseInt(newItemExtra) || 60,
+                    description: 'Newly added service.',
+                    image_url: 'bg-emerald-100 text-emerald-600' // Default color
+                };
+
+                const { data, error } = await supabase
+                    .from('services')
+                    .insert([newService])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                if (data) {
+                    setLocalServices([{
+                        ...data,
+                        category: data.category || 'General', // Handle potential nulls
+                        imageColor: data.image_url || 'bg-slate-100'
+                    } as Service, ...localServices]);
+                }
+
+            } else {
+                const newProduct = {
+                    organization_id: orgId,
+                    name: newItemName,
+                    category: newItemCategory || 'General',
+                    price: parseFloat(newItemPrice),
+                    stock: parseInt(newItemExtra) || 0,
+                    reorder_point: 5,
+                    sku: `NEW-${Date.now().toString().slice(-4)}`,
+                    description: 'Newly added product.',
+                    image_url: 'bg-blue-100 text-blue-600'
+                };
+
+                const { data, error } = await supabase
+                    .from('products')
+                    .insert([newProduct])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                if (data) {
+                    setLocalProducts([{
+                        ...data,
+                        reorderPoint: data.reorder_point,
+                        imageColor: data.image_url || 'bg-slate-100'
+                    } as Product, ...localProducts]);
+                }
+            }
+
+            // Reset and Close
+            setNewItemName('');
+            setNewItemPrice('');
+            setNewItemCategory('');
+            setNewItemExtra('');
+            setIsAddModalOpen(false);
+
+        } catch (error) {
+            console.error('Error adding item:', error);
+            alert('Failed to add item. Please try again.');
         }
-
-        // Reset and Close
-        setNewItemName('');
-        setNewItemPrice('');
-        setNewItemCategory('');
-        setNewItemExtra('');
-        setIsAddModalOpen(false);
     };
 
     // Helper to get industry-specific icons and labels

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Search,
     Filter,
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 interface Employee {
-    id: number;
+    id: string;
     name: string;
     role: string;
     department: 'Field Ops' | 'Management' | 'Sales' | 'Admin';
@@ -30,97 +30,92 @@ interface Employee {
     joinDate: string;
 }
 
-const MOCK_EMPLOYEES: Employee[] = [
-    {
-        id: 1,
-        name: 'John Anderson',
-        role: 'Master Electrician',
-        department: 'Field Ops',
-        status: 'active',
-        clockStatus: 'clocked-in',
-        efficiency: 98,
-        email: 'j.anderson@workforce.com',
-        phone: '(555) 123-4567',
-        location: 'Zone A - Downtown',
-        certifications: [{ name: 'Master Lic.', status: 'valid' }, { name: 'OSHA 30', status: 'valid' }],
-        imgUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-        joinDate: 'Jan 2021'
-    },
-    {
-        id: 2,
-        name: 'Sarah Jenkins',
-        role: 'Project Supervisor',
-        department: 'Management',
-        status: 'active',
-        clockStatus: 'clocked-in',
-        efficiency: 94,
-        email: 's.jenkins@workforce.com',
-        phone: '(555) 987-6543',
-        location: 'HQ - Office 2',
-        certifications: [{ name: 'PMP', status: 'valid' }],
-        imgUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-        joinDate: 'Mar 2020'
-    },
-    {
-        id: 3,
-        name: 'Michael Chen',
-        role: 'HVAC Specialist',
-        department: 'Field Ops',
-        status: 'active',
-        clockStatus: 'clocked-out',
-        efficiency: 88,
-        email: 'm.chen@workforce.com',
-        phone: '(555) 456-7890',
-        location: 'Mobile Unit 4',
-        certifications: [{ name: 'EPA 608', status: 'expiring' }],
-        imgUrl: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-        joinDate: 'Jun 2022'
-    },
-    {
-        id: 4,
-        name: 'Emma Rodriguez',
-        role: 'Crane Operator',
-        department: 'Field Ops',
-        status: 'on-leave',
-        clockStatus: 'clocked-out',
-        efficiency: 92,
-        email: 'e.rodriguez@workforce.com',
-        phone: '(555) 789-0123',
-        location: 'N/A',
-        certifications: [{ name: 'CCO', status: 'valid' }],
-        imgUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-        joinDate: 'Nov 2021'
-    },
-    {
-        id: 5,
-        name: 'David Kim',
-        role: 'Sales Associate',
-        department: 'Sales',
-        status: 'active',
-        clockStatus: 'clocked-in',
-        efficiency: 85,
-        email: 'd.kim@workforce.com',
-        phone: '(555) 234-5678',
-        location: 'Showroom Floor',
-        certifications: [],
-        imgUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-        joinDate: 'Aug 2023'
-    },
-];
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+
+// ... (imports remain)
 
 const Employees = () => {
+    const { user } = useAuth();
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const [filterRole, setFilterRole] = useState('All');
+    const [employees, setEmployees] = useState<Employee[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch Employees
+    useEffect(() => {
+        const fetchEmployees = async () => {
+            if (!user) return;
+            try {
+                // Get Org ID
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('organization_id')
+                    .eq('id', user.id)
+                    .single();
+
+                if (!profile?.organization_id) {
+                    setLoading(false);
+                    return;
+                }
+                const orgId = profile.organization_id;
+
+                const { data: profiles, error } = await supabase
+                    .from('profiles')
+                    .select('id, name, role, department, email, phone, avatar_url, created_at')
+                    .eq('organization_id', orgId);
+
+                if (error) throw error;
+
+                if (profiles) {
+                    const mappedEmployees: Employee[] = profiles.map((p: any) => ({
+                        id: p.id,
+                        name: p.name || 'Unknown User',
+                        role: p.role || 'Team Member',
+                        department: p.department || 'Field Ops', // specific types might mismatch, casting for now
+                        status: 'active', // Default
+                        clockStatus: 'clocked-out', // Default
+                        efficiency: 100, // Placeholder
+                        email: p.email || 'N/A',
+                        phone: p.phone || 'N/A',
+                        location: 'Field', // Placeholder
+                        certifications: [], // Placeholder
+                        imgUrl: p.avatar_url || 'https://via.placeholder.com/150',
+                        joinDate: new Date(p.created_at).toLocaleDateString()
+                    }));
+                    setEmployees(mappedEmployees);
+                }
+            } catch (error) {
+                console.error('Error fetching employees:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchEmployees();
+    }, [user]);
 
     // Metrics Calculation
-    const totalEmployees = MOCK_EMPLOYEES.length;
-    const activeNow = MOCK_EMPLOYEES.filter(e => e.clockStatus === 'clocked-in').length;
-    const avgEfficiency = Math.round(MOCK_EMPLOYEES.reduce((acc, curr) => acc + curr.efficiency, 0) / totalEmployees);
-    const expiringCerts = MOCK_EMPLOYEES.filter(e => e.certifications.some(c => c.status === 'expiring' || c.status === 'expired')).length;
+    const totalEmployees = employees.length;
+    const activeNow = employees.filter(e => e.clockStatus === 'clocked-in').length;
+    const avgEfficiency = totalEmployees > 0 ? Math.round(employees.reduce((acc, curr) => acc + curr.efficiency, 0) / totalEmployees) : 0;
+    const expiringCerts = employees.filter(e => e.certifications.some(c => c.status === 'expiring' || c.status === 'expired')).length;
+
+    // Loading State
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#151210]">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-[#de5c1b] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-500 font-medium">Loading team...</p>
+                </div>
+            </div>
+        );
+    }
 
     // Filter Logic
-    const filteredEmployees = MOCK_EMPLOYEES.filter(emp => {
+    const filteredEmployees = employees.filter(emp => {
         const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             emp.role.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesRole = filterRole === 'All' || emp.department === filterRole;
@@ -339,8 +334,8 @@ const EmployeeRow = ({ employee }: { employee: Employee }) => (
         </td>
         <td className="p-4">
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${employee.clockStatus === 'clocked-in'
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
-                    : 'bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400'
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                : 'bg-slate-100 text-slate-600 dark:bg-slate-500/10 dark:text-slate-400'
                 }`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${employee.clockStatus === 'clocked-in' ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
                 {employee.clockStatus === 'clocked-in' ? 'Active' : 'Offline'}

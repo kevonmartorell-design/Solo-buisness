@@ -21,6 +21,8 @@ import { SidebarProvider } from './contexts/SidebarContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { BrandingProvider } from './contexts/BrandingContext';
 import { VaultProvider } from './contexts/VaultContext';
+import { OnboardingProvider } from './contexts/OnboardingContext';
+import Onboarding from './pages/auth/Onboarding';
 
 function App() {
   return (
@@ -28,25 +30,28 @@ function App() {
       <AuthProvider>
         <BrandingProvider>
           <VaultProvider>
-            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
+            <OnboardingProvider>
+              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/onboarding" element={<Onboarding />} />
 
-                <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                  <Route path="/dashboard" element={<Overview />} />
-                  <Route path="/vault" element={<Vault />} />
-                  <Route path="/schedule" element={<Schedule />} />
-                  <Route path="/employees" element={<Employees />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/clients" element={<Clients />} />
-                  <Route path="/services" element={<Services />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/settings" element={<Settings />} />
-                </Route>
-              </Routes>
-            </BrowserRouter>
+                  <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                    <Route path="/dashboard" element={<Overview />} />
+                    <Route path="/vault" element={<Vault />} />
+                    <Route path="/schedule" element={<Schedule />} />
+                    <Route path="/employees" element={<Employees />} />
+                    <Route path="/analytics" element={<Analytics />} />
+                    <Route path="/clients" element={<Clients />} />
+                    <Route path="/services" element={<Services />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/settings" element={<Settings />} />
+                  </Route>
+                </Routes>
+              </BrowserRouter>
+            </OnboardingProvider>
           </VaultProvider>
         </BrandingProvider>
       </AuthProvider>

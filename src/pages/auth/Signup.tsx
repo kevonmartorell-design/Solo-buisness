@@ -1,15 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBranding } from '../../contexts/BrandingContext';
+import { supabase } from '../../lib/supabase';
 
 const Signup = () => {
     const navigate = useNavigate();
     const { companyName, logoUrl } = useBranding();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleSignup = (e: React.FormEvent) => {
+    const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Implement actual signup logic
-        navigate('/dashboard');
+        setLoading(true);
+        setError(null);
+
+        const formData = new FormData(e.currentTarget as HTMLFormElement);
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
+        const fullName = formData.get('fullName') as string;
+
+        try {
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: fullName,
+                    },
+                },
+            });
+
+            if (error) throw error;
+
+            if (data.user) {
+                // Determine where to go next. Usually onboarding if not completed.
+                // We'll send them to onboarding by default for new signups.
+                navigate('/onboarding');
+            }
+        } catch (err: any) {
+            console.error('Signup error:', err);
+            setError(err.message || 'Failed to sign up');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -44,6 +77,13 @@ const Signup = () => {
                 {/* Signup Card */}
                 <div className="w-full bg-[#1a1614]/80 backdrop-blur-md border border-white/10 rounded-xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                     <h2 className="text-white text-xl font-semibold mb-6">Create Account</h2>
+
+                    {error && (
+                        <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-lg text-sm">
+                            {error}
+                        </div>
+                    )}
+
                     <form className="space-y-5" onSubmit={handleSignup}>
                         <div className="flex flex-col gap-2">
                             <label className="text-slate-400 text-sm font-medium ml-1">Full Name</label>
@@ -52,6 +92,8 @@ const Signup = () => {
                                     <span className="material-symbols-outlined text-slate-500 text-xl group-focus-within:text-[#de5c1b] transition-colors">person</span>
                                 </div>
                                 <input
+                                    name="fullName"
+                                    required
                                     className="w-full bg-[#261f1c] border border-white/10 rounded-lg py-3.5 pl-11 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#de5c1b] focus:border-[#de5c1b] transition-all"
                                     placeholder="e.g. Marcus Aurelius"
                                     type="text"
@@ -66,6 +108,8 @@ const Signup = () => {
                                     <span className="material-symbols-outlined text-slate-500 text-xl group-focus-within:text-[#de5c1b] transition-colors">mail</span>
                                 </div>
                                 <input
+                                    name="email"
+                                    required
                                     className="w-full bg-[#261f1c] border border-white/10 rounded-lg py-3.5 pl-11 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#de5c1b] focus:border-[#de5c1b] transition-all"
                                     placeholder="name@company.com"
                                     type="email"
@@ -80,6 +124,9 @@ const Signup = () => {
                                     <span className="material-symbols-outlined text-slate-500 text-xl group-focus-within:text-[#de5c1b] transition-colors">lock</span>
                                 </div>
                                 <input
+                                    name="password"
+                                    required
+                                    minLength={6}
                                     className="w-full bg-[#261f1c] border border-white/10 rounded-lg py-3.5 pl-11 pr-12 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#de5c1b] focus:border-[#de5c1b] transition-all"
                                     placeholder="••••••••"
                                     type="password"
@@ -94,11 +141,12 @@ const Signup = () => {
                         </div>
 
                         <button
-                            className="w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-4 rounded-lg shadow-lg shadow-[#de5c1b]/20 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-2"
+                            disabled={loading}
+                            className={`w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-4 rounded-lg shadow-lg shadow-[#de5c1b]/20 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-2 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                             type="submit"
                         >
-                            <span>CREATE ACCOUNT</span>
-                            <span className="material-symbols-outlined text-xl">arrow_forward</span>
+                            <span>{loading ? 'CREATING OPTIMIZED ACCOUNT...' : 'CREATE ACCOUNT'}</span>
+                            {!loading && <span className="material-symbols-outlined text-xl">arrow_forward</span>}
                         </button>
                     </form>
 
@@ -167,3 +215,5 @@ const Signup = () => {
 };
 
 export default Signup;
+
+

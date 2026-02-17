@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Menu,
     Plus,
@@ -10,19 +10,14 @@ import {
     Calendar as CalendarIcon,
     Briefcase
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { useSidebar } from '../../contexts/SidebarContext';
 import BookingModal from '../../components/dashboard/schedule/BookingModal';
 import EventCard from '../../components/dashboard/schedule/EventCard';
-import type { Resource, Event, EventType } from '../../types/schedule';
+import type { Resource, Event } from '../../types/schedule';
 
-// --- Mock Data ---
-
-const MOCK_RESOURCES: Resource[] = [
-    { id: 'r1', name: 'John Anderson', role: 'Master Electrician', department: 'Field Ops', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
-    { id: 'r2', name: 'Sarah Jenkins', role: 'Project Supervisor', department: 'Management', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
-    { id: 'r3', name: 'Michael Chen', role: 'HVAC Specialist', department: 'Field Ops', avatar: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
-    { id: 'r4', name: 'David Kim', role: 'Sales Associate', department: 'Sales', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80' },
-];
+// --- Constants ---
 
 // --- Helpers ---
 
@@ -64,40 +59,108 @@ const Schedule = () => {
         setTimeout(() => setFeedbackMessage(null), 3000);
     };
 
-    // --- Mock Data Generator ---
-    const generateMockEvents = () => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return [
-            { id: '1', title: 'Morning Shift', type: 'Shift', startTime: '08:00', endTime: '16:00', duration: '8h', date: today, status: 'approved', resourceId: 'r1' },
-            { id: '2', title: 'Site Inspection', type: 'Maintenance', startTime: '10:00', endTime: '12:00', duration: '2h', date: today, status: 'approved', resourceId: 'r2' },
-            { id: '3', title: 'Strategy Meeting', type: 'Strategy', startTime: '13:00', endTime: '14:30', duration: '1.5h', date: today, status: 'approved', resourceId: 'r2' },
-            { id: '4', title: 'HVAC Repair', type: 'Installation', startTime: '09:00', endTime: '13:00', duration: '4h', date: today, status: 'swap-requested', resourceId: 'r3', requester: 'Michael Chen' },
-            { id: '5', title: 'Afternoon Coverage', type: 'Shift', startTime: '12:00', endTime: '20:00', duration: '8h', date: today, status: 'open' }, // Open shift
-            { id: '6', title: 'Pending Approval', type: 'Consultation', startTime: '15:00', endTime: '16:00', duration: '1h', date: today, status: 'pending', requester: 'Client: TechLink' }
-        ] as Event[];
-    };
+    // --- Data Fetching ---
+    const { user } = useAuth();
+    const [resources, setResources] = useState<Resource[]>([]);
+    const [events, setEvents] = useState<Event[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const [events, setEvents] = useState<Event[]>(generateMockEvents());
+    useEffect(() => {
+        const fetchScheduleData = async () => {
+            if (!user) return;
+
+            try {
+                // Get Org ID
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('organization_id')
+                    .eq('id', user.id)
+                    .single();
+
+                if (!profile?.organization_id) {
+                    setLoading(false);
+                    return;
+                }
+                const orgId = profile.organization_id;
+
+                // 1. Fetch Resources (Profiles in the same Org)
+                const { data: teamMembers } = await supabase
+                    .from('profiles')
+                    .select('id, name, role, avatar_url')
+                    .eq('organization_id', orgId);
+
+                const mappedResources: Resource[] = teamMembers?.map(m => ({
+                    id: m.id,
+                    name: m.name || 'Team Member',
+                    role: m.role || 'Team Member',
+                    department: 'Field Ops', // Mock dept for now or fetch if available
+                    avatar: m.avatar_url || 'https://via.placeholder.com/150'
+                })) || [];
+                setResources(mappedResources);
+
+                // 2. Fetch Events (Bookings)
+                const { data: bookings } = await supabase
+                    .from('bookings')
+                    .select(`
+                        id, 
+                        booking_datetime, 
+                        status, 
+                        employee_id, 
+                        notes,
+                        service:services(name, duration) 
+                    `)
+                    .eq('organization_id', orgId);
+
+                const mappedEvents: Event[] = bookings?.map((b: any) => {
+                    const startTime = new Date(b.booking_datetime);
+                    // Default duration 1 hour if not specified in service
+                    const durationMinutes = b.service?.duration || 60;
+                    const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
+
+                    return {
+                        id: b.id,
+                        title: b.service?.name || 'Untitled Booking',
+                        type: 'Shift', // Default type
+                        startTime: startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+                        endTime: endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+                        duration: calculateDuration(
+                            startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+                            endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+                        ),
+                        date: startTime,
+                        status: b.status,
+                        resourceId: b.employee_id, // Map employee_id to resourceId
+                        notes: b.notes
+                    };
+                }) || [];
+                setEvents(mappedEvents);
+
+            } catch (error) {
+                console.error('Error fetching schedule:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchScheduleData();
+    }, [user, selectedDate]); // Refetch when selectedDate changes if we want to filter query server-side later
 
     // --- Conflict Detection ---
-
     const checkForConflicts = (resourceId: string | undefined, startTime: string, endTime: string, date: Date, excludeEventId?: string) => {
-        if (!resourceId) return false; // Open shifts don't have conflicts in this simple model
+        if (!resourceId) return false;
 
         const startMins = timeToMinutes(startTime);
         const endMins = timeToMinutes(endTime);
 
         return events.some(event => {
-            if (event.id === excludeEventId) return false; // Don't check against self
-            if (event.resourceId !== resourceId) return false; // Check only for this resource
-            if (!isSameDay(event.date, date)) return false; // Check only for this day
-            if (event.status === 'declined') return false; // Ignore declined events
+            if (event.id === excludeEventId) return false;
+            if (event.resourceId !== resourceId) return false;
+            if (!isSameDay(event.date, date)) return false;
+            if (event.status === 'declined') return false;
 
             const eventStart = timeToMinutes(event.startTime);
             const eventEnd = timeToMinutes(event.endTime);
 
-            // Overlap logic: (StartA < EndB) and (EndA > StartB)
             return (startMins < eventEnd && endMins > eventStart);
         });
     };
@@ -220,7 +283,7 @@ const Schedule = () => {
         if (event) {
             // Check for conflicts on the target resource
             if (checkForConflicts(resourceId, event.startTime, event.endTime, event.date, event.id)) {
-                showFeedback(`Conflict detected! ${MOCK_RESOURCES.find(r => r.id === resourceId)?.name} is busy.`, 'error');
+                showFeedback(`Conflict detected! ${resources.find(r => r.id === resourceId)?.name} is busy.`, 'error');
                 return;
             }
 
@@ -230,20 +293,32 @@ const Schedule = () => {
                     ? { ...ev, resourceId: resourceId }
                     : ev
             ));
-            showFeedback(`Reassigned to ${MOCK_RESOURCES.find(r => r.id === resourceId)?.name}`);
+            showFeedback(`Reassigned to ${resources.find(r => r.id === resourceId)?.name}`);
         }
     };
 
 
     // --- Filter Logic ---
     const filteredEvents = events.filter(e => isSameDay(e.date, selectedDate));
-    const filteredResources = filterDept === 'All' ? MOCK_RESOURCES : MOCK_RESOURCES.filter(r => r.department === filterDept);
+    const filteredResources = filterDept === 'All' ? resources : resources.filter(r => r.department === filterDept);
 
     const weekDays = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(); // In real app, start from current week start
         d.setDate(new Date().getDate() + i);
         return d;
     });
+
+    // Loading State
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#211611]">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-[#de5c1b] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-500 font-medium">Loading schedule...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-white dark:bg-[#211611] text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
@@ -403,7 +478,7 @@ const Schedule = () => {
                         {filteredEvents
                             .filter(e => e.status === 'approved' || e.status === 'swap-requested' || e.status === 'pending')
                             .map(event => {
-                                const resource = MOCK_RESOURCES.find(r => r.id === event.resourceId);
+                                const resource = resources.find(r => r.id === event.resourceId);
                                 // Hide pending time off from agenda unless involved
                                 if (event.type === 'TimeOff' && event.status === 'pending') return null;
 
@@ -501,7 +576,7 @@ const Schedule = () => {
                 onDelete={handleDeleteEvent}
                 initialData={editingEvent}
                 error={bookingError}
-                resources={MOCK_RESOURCES}
+                resources={resources}
             />
 
             <style>{`.custom-scrollbar::-webkit-scrollbar { display: none; }`}</style>

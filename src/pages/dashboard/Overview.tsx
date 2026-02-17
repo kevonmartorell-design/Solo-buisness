@@ -1,31 +1,162 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import MetricCard from '../../components/dashboard/MetricCard';
 import RevenueChart from '../../components/dashboard/RevenueChart';
 import SystemHealth from '../../components/dashboard/SystemHealth';
 import ActivityFeed from '../../components/dashboard/ActivityFeed';
 import { motion } from 'framer-motion';
-import { useVault } from '../../contexts/VaultContext';
+
+
+// Simple helper to avoid adding date-fns dependency if npm fails
+const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + " years ago";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + " months ago";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " days ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + " hours ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + " minutes ago";
+    return Math.floor(seconds) + " seconds ago";
+};
 
 const Overview = () => {
-    const { industry } = useVault();
+    const { user } = useAuth();
 
-    const getIndustryMetrics = () => {
-        switch (industry) {
-            case 'Healthcare':
-                return { active: 'Active Patients', icon: 'medical_services', unit: 'Patients' };
-            case 'Construction':
-                return { active: 'Active Jobs', icon: 'construction', unit: 'Sites' };
-            case 'Security':
-                return { active: 'Active Patrols', icon: 'security', unit: 'Routes' };
-            case 'Logistics':
-                return { active: 'Active Fleets', icon: 'local_shipping', unit: 'Vehicles' };
-            case 'Hospitality':
-                return { active: 'Open Tables', icon: 'restaurant', unit: 'Reservations' };
-            default:
-                return { active: 'Active Jobs', icon: 'work', unit: 'Jobs' };
-        }
-    };
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState({
+        revenue: 0,
+        activeCount: 0,
+        efficiency: 100, // We will repurpose this or ignore, using specific fields below
+        recentActivity: [] as any[],
+        dailyRevenue: [] as any[],
+        bestClient: '',
+        retention: ''
+    });
 
-    const metrics = getIndustryMetrics();
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            if (!user) return;
+
+            try {
+                // Get Organization ID
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('organization_id')
+                    .eq('id', user.id)
+                    .single();
+
+                if (!profile?.organization_id) {
+                    setLoading(false);
+                    return;
+                }
+
+                const orgId = profile.organization_id;
+
+                // 1. Fetch Bookings with Service details for Revenue
+                const { data: bookingsData } = await supabase
+                    .from('bookings')
+                    .select(`
+                        id,
+                        status,
+                        client_id,
+                        service:services (
+                            price
+                        ),
+                        client:clients (
+                            id,
+                            name
+                        )
+                    `)
+                    .eq('organization_id', orgId);
+
+                // Cast to any to avoid complex type definition for joined tables for now
+                const bookings = bookingsData as any[] || [];
+
+                // Calculate Metrics
+                const confirmedBookings = bookings?.filter(b => b.status === 'confirmed' || b.status === 'completed') || [];
+
+                // Total Revenue
+                const totalRevenue = confirmedBookings.reduce((sum, booking) => {
+                    const price = Array.isArray(booking.service) ? booking.service[0]?.price : booking.service?.price;
+                    return sum + (Number(price) || 0);
+                }, 0);
+
+                // Total Bookings Count
+                const totalBookings = bookings?.length || 0;
+
+                // Best Client
+                const clientSpend: Record<string, { name: string, spend: number, bookings: number }> = {};
+                confirmedBookings.forEach(booking => {
+                    if (booking.client_id && booking.client) {
+                        const clientId = booking.client_id;
+                        const clientName = Array.isArray(booking.client) ? booking.client[0]?.name : booking.client?.name;
+                        const price = Array.isArray(booking.service) ? booking.service[0]?.price : booking.service?.price;
+
+                        if (!clientSpend[clientId]) {
+                            clientSpend[clientId] = { name: clientName || 'Unknown', spend: 0, bookings: 0 };
+                        }
+                        clientSpend[clientId].spend += (Number(price) || 0);
+                        clientSpend[clientId].bookings += 1;
+                    }
+                });
+
+                const bestClient = Object.values(clientSpend).sort((a, b) => b.spend - a.spend)[0];
+
+                // Retention Rate
+                const totalClientsWithBookings = Object.keys(clientSpend).length;
+                const repeatClients = Object.values(clientSpend).filter(c => c.bookings > 1).length;
+                const retentionRate = totalClientsWithBookings > 0 ? Math.round((repeatClients / totalClientsWithBookings) * 100) : 0;
+
+
+                // 3. Fetch Recent Activity (Audit Logs)
+                const { data: auditLogs } = await supabase
+                    .from('audit_logs')
+                    .select('*')
+                    .eq('organization_id', orgId)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                const formattedActivity = auditLogs?.map(log => ({
+                    id: log.id,
+                    type: 'system',
+                    content: `${log.action} ${log.entity_type}`,
+                    time: formatTimeAgo(log.created_at),
+                    user: 'System'
+                })) || [];
+
+                setStats({
+                    revenue: totalRevenue,
+                    activeCount: totalBookings, // Showing Total Bookings instead of just count
+                    efficiency: retentionRate, // Using Efficiency card for Retention Rate for now, or update the card title
+                    recentActivity: formattedActivity,
+                    dailyRevenue: [], // Still empty for now
+                    bestClient: bestClient ? `${bestClient.name} ($${bestClient.spend})` : 'No clients yet',
+                    retention: `${retentionRate}%`
+                });
+
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, [user]);
+
+
+
+    if (loading) {
+        return <div className="text-white/40 p-8">Loading dashboard...</div>;
+    }
 
     return (
         <div className="space-y-8">
@@ -37,52 +168,64 @@ const Overview = () => {
             >
                 <div>
                     <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Command Center</h1>
-                    <p className="text-white/40 text-sm font-medium tracking-wider">{industry.toUpperCase()} EDITION</p>
+                    <p className="text-white/40 text-sm font-medium tracking-wider">BUSINESS EDITION</p>
                 </div>
                 <p className="text-white/40 text-sm">System Status: <span className="text-[#de5c1b] font-bold">OPTIMAL</span></p>
             </motion.div>
 
             {/* Hero Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <MetricCard
-                    title="Total Revenue"
-                    value="$94,203"
-                    trend="+12% vs last week"
+                    title="Total Bookings"
+                    value={stats.activeCount.toString()}
+                    trend="Lifetime"
                     trendUp={true}
-                    icon="payments"
+                    icon="calendar_month"
                     delay={0.1}
                 />
                 <MetricCard
-                    title={metrics.active}
-                    value="24"
-                    trend="+4 new today"
+                    title="Total Revenue"
+                    value={`$${stats.revenue.toLocaleString()}`}
+                    trend="Gross"
                     trendUp={true}
-                    icon={metrics.icon}
+                    icon="payments"
                     delay={0.2}
                 />
                 <MetricCard
-                    title="Efficiency"
-                    value="98.5%"
-                    trend="+2% vs avg"
+                    title="Best Client"
+                    value={stats.bestClient || 'N/A'}
+                    trend="Top Spender"
                     trendUp={true}
-                    icon="bolt"
+                    icon="person_celebrate"
                     delay={0.3}
+                />
+                <MetricCard
+                    title="Retention Rate"
+                    value={stats.retention || '0%'}
+                    trend="Returning"
+                    trendUp={true}
+                    icon="repeat"
+                    delay={0.4}
                 />
             </div>
 
             {/* Main Visuals */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                    <RevenueChart />
+                    <RevenueChart data={stats.dailyRevenue} />
                 </div>
                 <div className="lg:col-span-1">
-                    <SystemHealth />
+                    <SystemHealth
+                        score={stats.efficiency}
+                        title="System Status"
+                        subtext="All systems operational. Ready for business."
+                    />
                 </div>
             </div>
 
             {/* Live Intelligence */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <ActivityFeed />
+                <ActivityFeed activities={stats.recentActivity} />
 
                 {/* Placeholder for future module, e.g., Map or Calendar snippet */}
                 <motion.div

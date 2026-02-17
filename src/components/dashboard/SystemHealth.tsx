@@ -1,11 +1,17 @@
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
 
-const data = [
-    { name: 'Health', value: 94.2, fill: '#de5c1b' }
-];
+interface SystemHealthProps {
+    score?: number;
+    title?: string;
+    subtext?: string;
+}
 
-const SystemHealth = () => {
+const SystemHealth = ({ score = 100, title = "System Health", subtext = "All systems operational." }: SystemHealthProps) => {
+    const data = [
+        { name: 'Health', value: score, fill: '#de5c1b' }
+    ];
+
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -15,7 +21,7 @@ const SystemHealth = () => {
         >
             <div className="absolute inset-0 bg-[#de5c1b]/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none blur-3xl"></div>
 
-            <h3 className="text-white font-bold text-lg mb-2 relative z-10">System Health</h3>
+            <h3 className="text-white font-bold text-lg mb-2 relative z-10">{title}</h3>
 
             <div className="relative size-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -44,13 +50,15 @@ const SystemHealth = () => {
                 </ResponsiveContainer>
 
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-5xl font-black text-white tracking-tighter">94.2%</span>
-                    <span className="text-[#de5c1b] text-sm font-bold uppercase tracking-widest mt-2 animate-pulse">Optimal</span>
+                    <span className="text-5xl font-black text-white tracking-tighter">{score}%</span>
+                    <span className="text-[#de5c1b] text-sm font-bold uppercase tracking-widest mt-2 animate-pulse">
+                        {score >= 90 ? 'Optimal' : score >= 70 ? 'Good' : 'Attention'}
+                    </span>
                 </div>
             </div>
 
             <p className="text-white/40 text-xs text-center mt-4 max-w-[200px]">
-                All systems operational. Network latency within nominal parameters.
+                {subtext}
             </p>
         </motion.div>
     );
