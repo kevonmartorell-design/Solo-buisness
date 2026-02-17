@@ -40,6 +40,7 @@ const Profile = () => {
     const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
 
     // Editable Fields
+    const [fullName, setFullName] = useState('');
     const [businessBio, setBusinessBio] = useState('');
     const [industry, setIndustry] = useState('');
     const [location, setLocation] = useState('');
@@ -69,6 +70,7 @@ const Profile = () => {
             setProfile(profileData);
 
             // Set initial values from profile or defaults
+            setFullName(profileData.name || '');
             setBusinessBio(profileData.bio || '');
 
             if (profileData.organization_id) {
@@ -127,6 +129,7 @@ const Profile = () => {
             const { error: profileUpdateError } = await (supabase as any)
                 .from('profiles')
                 .update({
+                    name: fullName,
                     bio: businessBio,
                     // updated_at: new Date().toISOString() // Supabase handles this if set up, but let's be safe
                 })
@@ -220,64 +223,74 @@ const Profile = () => {
                         </div>
                     </div>
                     <div className="text-center z-10">
-                        <h1 className="text-2xl font-bold font-display tracking-tight text-white px-2">{orgName || profile?.name || 'Your Organization'}</h1>
-                        <p className="text-[#de5c1b] font-medium">{socialHandle || '@username'}</p>
-                        <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-[#de5c1b]/10 border border-[#de5c1b]/30 rounded-full text-xs font-bold text-[#de5c1b] uppercase tracking-widest">
-                            Est. {organization?.created_at ? new Date(organization.created_at).getFullYear() : '2024'}
-                        </div>
+                        <h1 className="text-2xl font-bold font-display tracking-tight text-white px-2">
+                            {user?.tier === 'Free' ? (profile?.name || user?.name) : (orgName || profile?.name || 'Your Organization')}
+                        </h1>
+                        {user?.tier !== 'Free' && (
+                            <>
+                                <p className="text-[#de5c1b] font-medium">{socialHandle || '@username'}</p>
+                                <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-[#de5c1b]/10 border border-[#de5c1b]/30 rounded-full text-xs font-bold text-[#de5c1b] uppercase tracking-widest">
+                                    Est. {organization?.created_at ? new Date(organization.created_at).getFullYear() : '2024'}
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
 
                 {/* Public Booking Link (Featured CTA) */}
-                <section className="p-4">
-                    <div className="bg-[#de5c1b] p-4 rounded-xl flex items-center justify-between shadow-lg shadow-[#de5c1b]/20">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-white/20 p-2 rounded-lg text-white">
-                                <Link className="w-6 h-6" />
+                {user?.tier !== 'Free' && (
+                    <section className="p-4">
+                        <div className="bg-[#de5c1b] p-4 rounded-xl flex items-center justify-between shadow-lg shadow-[#de5c1b]/20">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-white/20 p-2 rounded-lg text-white">
+                                    <Link className="w-6 h-6" />
+                                </div>
+                                <div className="overflow-hidden">
+                                    <p className="text-white/80 text-xs font-bold uppercase tracking-wider">Public Booking Link</p>
+                                    <p className="text-white font-semibold truncate max-w-[150px] sm:max-w-xs cursor-pointer hover:underline" title="Click to test link">
+                                        {orgName ? `${orgName.replace(/\s+/g, '').toLowerCase()}.kevonmartorell.com/booking` : 'your-business.kevonmartorell.com/booking'}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="overflow-hidden">
-                                <p className="text-white/80 text-xs font-bold uppercase tracking-wider">Public Booking Link</p>
-                                <p className="text-white font-semibold truncate max-w-[150px] sm:max-w-xs cursor-pointer hover:underline" title="Click to test link">
-                                    {orgName ? `${orgName.replace(/\s+/g, '').toLowerCase()}.kevonmartorell.com/booking` : 'your-business.kevonmartorell.com/booking'}
-                                </p>
-                            </div>
+                            <button
+                                onClick={() => {
+                                    const link = orgName ? `${orgName.replace(/\s+/g, '').toLowerCase()}.kevonmartorell.com/booking` : 'your-business.kevonmartorell.com/booking';
+                                    navigator.clipboard.writeText(link);
+                                    alert('Link copied to clipboard!'); // Simple feedback for now
+                                }}
+                                className="bg-white text-[#de5c1b] px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 active:scale-95 transition-transform shrink-0"
+                            >
+                                <Copy className="w-4 h-4" />
+                                Copy
+                            </button>
                         </div>
-                        <button
-                            onClick={() => {
-                                const link = orgName ? `${orgName.replace(/\s+/g, '').toLowerCase()}.kevonmartorell.com/booking` : 'your-business.kevonmartorell.com/booking';
-                                navigator.clipboard.writeText(link);
-                                alert('Link copied to clipboard!'); // Simple feedback for now
-                            }}
-                            className="bg-white text-[#de5c1b] px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 active:scale-95 transition-transform shrink-0"
-                        >
-                            <Copy className="w-4 h-4" />
-                            Copy
-                        </button>
-                    </div>
-                </section>
+                    </section>
+                )}
 
 
                 {/* Navigation Tabs */}
-                <div className="flex items-center justify-center border-b border-[#de5c1b]/10 bg-white dark:bg-[#211611] sticky top-[73px] z-40">
-                    <button
-                        onClick={() => setActiveTab('overview')}
-                        className={`flex-1 py-4 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${activeTab === 'overview' ? 'border-[#de5c1b] text-[#de5c1b]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-                    >
-                        Overview
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('reviews')}
-                        className={`flex-1 py-4 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${activeTab === 'reviews' ? 'border-[#de5c1b] text-[#de5c1b]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-                    >
-                        Reviews
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('portfolio')}
-                        className={`flex-1 py-4 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${activeTab === 'portfolio' ? 'border-[#de5c1b] text-[#de5c1b]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-                    >
-                        Portfolio
-                    </button>
-                </div>
+                {user?.tier !== 'Free' && (
+                    <div className="flex items-center justify-center border-b border-[#de5c1b]/10 bg-white dark:bg-[#211611] sticky top-[73px] z-40">
+                        <button
+                            onClick={() => setActiveTab('overview')}
+                            className={`flex-1 py-4 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${activeTab === 'overview' ? 'border-[#de5c1b] text-[#de5c1b]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                        >
+                            Overview
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('reviews')}
+                            className={`flex-1 py-4 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${activeTab === 'reviews' ? 'border-[#de5c1b] text-[#de5c1b]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                        >
+                            Reviews
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('portfolio')}
+                            className={`flex-1 py-4 text-sm font-bold uppercase tracking-widest transition-colors border-b-2 ${activeTab === 'portfolio' ? 'border-[#de5c1b] text-[#de5c1b]' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                        >
+                            Portfolio
+                        </button>
+                    </div>
+                )}
 
                 <main className="flex-1 overflow-y-auto p-4 max-w-3xl mx-auto w-full">
 
@@ -285,21 +298,35 @@ const Profile = () => {
                     {activeTab === 'overview' && (
                         <div className="space-y-6 animate-fade-in">
                             <div className="bg-white dark:bg-[#2a1d17] p-6 rounded-2xl shadow-sm border border-[#de5c1b]/5 space-y-4">
-                                <h3 className="text-sm font-bold text-[#de5c1b] uppercase tracking-widest mb-4">Business Identity</h3>
+                                <h3 className="text-sm font-bold text-[#de5c1b] uppercase tracking-widest mb-4">
+                                    {user?.tier === 'Free' ? 'Personal Information' : 'Business Identity'}
+                                </h3>
 
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Organization Name</label>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Full Name</label>
                                         <input
                                             className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#de5c1b] outline-none transition-all dark:text-white font-medium"
                                             type="text"
-                                            value={orgName}
-                                            onChange={(e) => setOrgName(e.target.value)}
+                                            value={fullName}
+                                            onChange={(e) => setFullName(e.target.value)}
                                         />
                                     </div>
 
+                                    {user?.tier !== 'Free' && (
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Organization Name</label>
+                                            <input
+                                                className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#de5c1b] outline-none transition-all dark:text-white font-medium"
+                                                type="text"
+                                                value={orgName}
+                                                onChange={(e) => setOrgName(e.target.value)}
+                                            />
+                                        </div>
+                                    )}
+
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Business Bio</label>
+                                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">{user?.tier === 'Free' ? 'About Me' : 'Business Bio'}</label>
                                         <textarea
                                             className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#de5c1b] outline-none transition-all dark:text-white min-h-[100px] resize-none font-medium"
                                             value={businessBio}
@@ -307,65 +334,69 @@ const Profile = () => {
                                         ></textarea>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Industry</label>
-                                            <div className="relative">
-                                                <select
-                                                    className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 appearance-none focus:ring-2 focus:ring-[#de5c1b] outline-none dark:text-white font-medium"
-                                                    value={industry}
-                                                    onChange={(e) => setIndustry(e.target.value)}
-                                                >
-                                                    <option>Heavy Infrastructure</option>
-                                                    <option>Tech & Software</option>
-                                                    <option>Consulting</option>
-                                                    <option>Construction</option>
-                                                    <option>Security</option>
-                                                    <option>Other</option>
-                                                </select>
-                                                <ChevronDown className="absolute right-4 top-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
+                                    {user?.tier !== 'Free' && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Industry</label>
+                                                <div className="relative">
+                                                    <select
+                                                        className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 appearance-none focus:ring-2 focus:ring-[#de5c1b] outline-none dark:text-white font-medium"
+                                                        value={industry}
+                                                        onChange={(e) => setIndustry(e.target.value)}
+                                                    >
+                                                        <option>Heavy Infrastructure</option>
+                                                        <option>Tech & Software</option>
+                                                        <option>Consulting</option>
+                                                        <option>Construction</option>
+                                                        <option>Security</option>
+                                                        <option>Other</option>
+                                                    </select>
+                                                    <ChevronDown className="absolute right-4 top-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Location</label>
+                                                <input
+                                                    className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#de5c1b] outline-none transition-all dark:text-white font-medium"
+                                                    type="text"
+                                                    value={location}
+                                                    onChange={(e) => setLocation(e.target.value)}
+                                                />
                                             </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Location</label>
+                                    )}
+                                </div>
+                            </div>
+
+                            {user?.tier !== 'Free' && (
+                                <div className="bg-white dark:bg-[#2a1d17] p-6 rounded-2xl shadow-sm border border-[#de5c1b]/5 space-y-4">
+                                    <h3 className="text-sm font-bold text-[#de5c1b] uppercase tracking-widest mb-4">Contact & Social</h3>
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-[#de5c1b]/10 p-2.5 rounded-lg text-[#de5c1b]">
+                                                <Globe className="w-5 h-5" />
+                                            </div>
                                             <input
-                                                className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#de5c1b] outline-none transition-all dark:text-white font-medium"
+                                                className="flex-1 bg-transparent border-b border-slate-200 dark:border-slate-700 py-2 focus:border-[#de5c1b] outline-none dark:text-white font-medium"
                                                 type="text"
-                                                value={location}
-                                                onChange={(e) => setLocation(e.target.value)}
+                                                value={website}
+                                                onChange={(e) => setWebsite(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="bg-[#de5c1b]/10 p-2.5 rounded-lg text-[#de5c1b]">
+                                                <Share2 className="w-5 h-5" />
+                                            </div>
+                                            <input
+                                                className="flex-1 bg-transparent border-b border-slate-200 dark:border-slate-700 py-2 focus:border-[#de5c1b] outline-none dark:text-white font-medium"
+                                                type="text"
+                                                value={socialHandle}
+                                                onChange={(e) => setSocialHandle(e.target.value)}
                                             />
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div className="bg-white dark:bg-[#2a1d17] p-6 rounded-2xl shadow-sm border border-[#de5c1b]/5 space-y-4">
-                                <h3 className="text-sm font-bold text-[#de5c1b] uppercase tracking-widest mb-4">Contact & Social</h3>
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="bg-[#de5c1b]/10 p-2.5 rounded-lg text-[#de5c1b]">
-                                            <Globe className="w-5 h-5" />
-                                        </div>
-                                        <input
-                                            className="flex-1 bg-transparent border-b border-slate-200 dark:border-slate-700 py-2 focus:border-[#de5c1b] outline-none dark:text-white font-medium"
-                                            type="text"
-                                            value={website}
-                                            onChange={(e) => setWebsite(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="bg-[#de5c1b]/10 p-2.5 rounded-lg text-[#de5c1b]">
-                                            <Share2 className="w-5 h-5" />
-                                        </div>
-                                        <input
-                                            className="flex-1 bg-transparent border-b border-slate-200 dark:border-slate-700 py-2 focus:border-[#de5c1b] outline-none dark:text-white font-medium"
-                                            type="text"
-                                            value={socialHandle}
-                                            onChange={(e) => setSocialHandle(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
+                            )}
 
                             <button
                                 onClick={handleSave}
