@@ -9,7 +9,6 @@ import {
     Scissors,
     Sparkles,
     AlertTriangle,
-    Tag,
     X,
     Hammer,
     Stethoscope,
@@ -18,28 +17,21 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useVault } from '../../contexts/VaultContext';
+import type { Database } from '../../types/supabase';
 
-// Define types locally
-interface Service {
-    id: string;
-    name: string;
-    category: string;
-    price: number;
-    duration: number;
-    description: string;
-    imageColor: string;
+// Define types derived from Supabase
+type ServiceRow = Database['public']['Tables']['services']['Row'];
+type ProductRow = Database['public']['Tables']['products']['Row'];
+
+interface Service extends ServiceRow {
+    imageColor: string; // Helper property for UI
 }
 
-interface Product {
-    id: string;
-    name: string;
-    category: string;
-    price: number;
+interface Product extends ProductRow {
+    imageColor: string; // Helper property for UI
+    // Ensure properties used in UI are present or handled
     stock: number;
-    reorderPoint: number;
-    sku: string;
-    description: string;
-    imageColor: string;
+    reorder_point: number;
 }
 
 const Services = () => {
@@ -67,7 +59,7 @@ const Services = () => {
             if (!user) return;
             try {
                 // Get Org ID
-                const { data: profile } = await supabase
+                const { data: profile } = await (supabase as any)
                     .from('profiles')
                     .select('organization_id')
                     .eq('id', user.id)
@@ -80,39 +72,33 @@ const Services = () => {
                 const orgId = profile.organization_id;
 
                 // Fetch Services
-                const { data: servicesData } = await supabase
+                const { data: servicesData, error: servicesError } = await (supabase as any)
                     .from('services')
                     .select('*')
                     .eq('organization_id', orgId);
 
+                if (servicesError) throw servicesError;
+
                 if (servicesData) {
-                    setLocalServices(servicesData.map((s: any) => ({
-                        id: s.id,
-                        name: s.name,
-                        category: s.category || 'General',
-                        price: s.price || 0,
-                        duration: s.duration || 60,
-                        description: s.description || '',
+                    setLocalServices((servicesData as ServiceRow[]).map(s => ({
+                        ...s,
                         imageColor: s.image_url || 'bg-slate-100' // Using image_url to store color class for now
                     })));
                 }
 
                 // Fetch Products
-                const { data: productsData } = await supabase
+                const { data: productsData, error: productsError } = await (supabase as any)
                     .from('products')
                     .select('*')
                     .eq('organization_id', orgId);
 
+                if (productsError) throw productsError;
+
                 if (productsData) {
-                    setLocalProducts(productsData.map((p: any) => ({
-                        id: p.id,
-                        name: p.name,
-                        category: p.category || 'General',
-                        price: p.price || 0,
-                        stock: p.stock || 0,
-                        reorderPoint: p.reorder_point || 5,
-                        sku: p.sku || '',
-                        description: p.description || '',
+                    setLocalProducts((productsData as ProductRow[]).map(p => ({
+                        ...p,
+                        stock: p.stock ?? 0,
+                        reorder_point: p.reorder_point ?? 5,
                         imageColor: p.image_url || 'bg-slate-100'
                     })));
                 }
@@ -141,12 +127,12 @@ const Services = () => {
 
     const filteredServices = localServices.filter(s =>
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.category.toLowerCase().includes(searchTerm.toLowerCase())
+        (s.category && s.category.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const filteredProducts = localProducts.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchTerm.toLowerCase())
+        (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const handleAddItem = async () => {
@@ -154,7 +140,7 @@ const Services = () => {
 
         try {
             // Get Org ID
-            const { data: profile } = await supabase
+            const { data: profile } = await (supabase as any)
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', user.id)
@@ -164,7 +150,7 @@ const Services = () => {
             const orgId = profile.organization_id;
 
             if (activeTab === 'services') {
-                const newService = {
+                const newService: Database['public']['Tables']['services']['Insert'] = {
                     organization_id: orgId,
                     name: newItemName,
                     category: newItemCategory || 'General',
@@ -174,7 +160,7 @@ const Services = () => {
                     image_url: 'bg-emerald-100 text-emerald-600' // Default color
                 };
 
-                const { data, error } = await supabase
+                const { data, error } = await (supabase as any)
                     .from('services')
                     .insert([newService])
                     .select()
@@ -183,14 +169,13 @@ const Services = () => {
                 if (error) throw error;
                 if (data) {
                     setLocalServices([{
-                        ...data,
-                        category: data.category || 'General', // Handle potential nulls
+                        ...(data as ServiceRow),
                         imageColor: data.image_url || 'bg-slate-100'
-                    } as Service, ...localServices]);
+                    }, ...localServices]);
                 }
 
             } else {
-                const newProduct = {
+                const newProduct: Database['public']['Tables']['products']['Insert'] = {
                     organization_id: orgId,
                     name: newItemName,
                     category: newItemCategory || 'General',
@@ -202,7 +187,7 @@ const Services = () => {
                     image_url: 'bg-blue-100 text-blue-600'
                 };
 
-                const { data, error } = await supabase
+                const { data, error } = await (supabase as any)
                     .from('products')
                     .insert([newProduct])
                     .select()
@@ -211,10 +196,11 @@ const Services = () => {
                 if (error) throw error;
                 if (data) {
                     setLocalProducts([{
-                        ...data,
-                        reorderPoint: data.reorder_point,
+                        ...(data as ProductRow),
+                        stock: data.stock ?? 0,
+                        reorder_point: data.reorder_point ?? 5,
                         imageColor: data.image_url || 'bg-slate-100'
-                    } as Product, ...localProducts]);
+                    }, ...localProducts]);
                 }
             }
 
@@ -374,7 +360,7 @@ const Services = () => {
                             <div key={product.id} className="bg-white dark:bg-[#2a1d17] rounded-xl border border-[#de5c1b]/5 shadow-sm p-4 hover:border-[#de5c1b]/30 transition-all flex flex-col">
                                 <div className={`aspect-square ${product.imageColor} rounded-lg mb-4 flex items-center justify-center text-slate-400 font-bold text-xl relative`}>
                                     {product.name.charAt(0)}
-                                    {product.stock <= product.reorderPoint && (
+                                    {product.stock <= product.reorder_point && (
                                         <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                                             <AlertTriangle className="w-3 h-3" />
                                             Low Stock
@@ -388,7 +374,7 @@ const Services = () => {
                                     </div>
                                     <p className="text-xs text-slate-500 mb-2">{product.category}</p>
                                     <div className="flex items-center justify-between mt-auto pt-3 border-t border-[#de5c1b]/10">
-                                        <span className="text-xs font-medium text-slate-400">Stock: <span className={product.stock <= product.reorderPoint ? 'text-red-500 font-bold' : 'text-slate-700 dark:text-slate-200'}>{product.stock}</span></span>
+                                        <span className="text-xs font-medium text-slate-400">Stock: <span className={product.stock <= product.reorder_point ? 'text-red-500 font-bold' : 'text-slate-700 dark:text-slate-200'}>{product.stock}</span></span>
                                         <button className="text-[#de5c1b] hover:bg-[#de5c1b]/10 p-1.5 rounded-lg transition-colors">
                                             <Plus className="w-4 h-4" />
                                         </button>

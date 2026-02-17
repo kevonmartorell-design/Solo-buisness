@@ -18,7 +18,9 @@ const Sidebar = () => {
         { name: 'Analytics', path: '/analytics', icon: 'bar_chart' },
         { name: 'Clients', path: '/clients', icon: 'handshake' },
         { name: 'Services & Products', path: '/services', icon: 'inventory_2' },
+
         { name: 'Profile', path: '/profile', icon: 'account_circle' },
+        { name: 'My Bookings', path: '/my-bookings', icon: 'event_available' },
         { name: 'Settings', path: '/settings', icon: 'settings' },
     ];
 

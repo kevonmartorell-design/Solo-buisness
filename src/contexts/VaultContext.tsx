@@ -24,7 +24,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const { user } = useAuth();
     const [documents, setDocuments] = useState<VaultItem[]>([]);
     const [customCategories, setCustomCategories] = useState<VaultCategory[]>([]);
-    const [industry, setIndustry] = useState(() => localStorage.getItem('vault_industry') || 'General');
+    const [industry, setIndustry] = useState('General');
     const [loading, setLoading] = useState(true);
 
     // Initial Data Fetch
@@ -33,6 +33,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (!user) {
                 setDocuments([]);
                 setCustomCategories([]);
+                setIndustry('General');
                 setLoading(false);
                 return;
             }
@@ -51,6 +52,20 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 }
                 const orgId = profile.organization_id;
 
+                // Get Organization Data (Industry)
+                const { data: org } = await supabase
+                    .from('organizations')
+                    .select('onboarding_data')
+                    .eq('id', orgId)
+                    .single();
+
+                if (org?.onboarding_data) {
+                    const onboardingData = org.onboarding_data as any; // Still cast JSON to any for safety or define structure
+                    if (onboardingData.industry) {
+                        setIndustry(onboardingData.industry);
+                    }
+                }
+
                 // Fetch Documents
                 const { data: docsData, error: docsError } = await supabase
                     .from('vault_documents')
@@ -61,17 +76,17 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 if (docsError) throw docsError;
 
                 if (docsData) {
-                    setDocuments(docsData.map((d: any) => ({
+                    setDocuments(docsData.map((d) => ({
                         id: d.id,
                         name: d.name,
                         type: d.type || 'License',
-                        status: d.status || 'Verified',
+                        status: (d.status as VaultItem['status']) || 'Verified',
                         expiryDate: d.expiry_date || '',
                         category: d.category || 'General',
                         fileSize: d.file_size || '0 MB',
                         lastUpdated: new Date(d.updated_at).toISOString().split('T')[0],
-                        fileData: d.file_data,
-                        fileName: d.file_name
+                        fileData: d.file_data || undefined,
+                        fileName: d.file_name || undefined
                     })));
                 }
 
@@ -84,7 +99,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 if (catsError) throw catsError;
 
                 if (catsData) {
-                    setCustomCategories(catsData.map((c: any) => ({
+                    setCustomCategories(catsData.map((c) => ({
                         id: c.id,
                         name: c.name,
                         color: c.color || 'blue',
@@ -101,11 +116,6 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         fetchData();
     }, [user]);
-
-    // Save Industry to LocalStorage (Theme preference)
-    useEffect(() => {
-        localStorage.setItem('vault_industry', industry);
-    }, [industry]);
 
     const addDocument = async (doc: Omit<VaultItem, 'id' | 'lastUpdated'>) => {
         if (!user) return;
@@ -155,13 +165,13 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     id: data.id,
                     name: data.name,
                     type: data.type,
-                    status: data.status,
-                    expiryDate: data.expiry_date,
-                    category: data.category,
-                    fileSize: data.file_size,
+                    status: data.status as VaultItem['status'],
+                    expiryDate: data.expiry_date || '',
+                    category: data.category || 'General',
+                    fileSize: data.file_size || '0 MB',
                     lastUpdated: new Date(data.updated_at).toISOString().split('T')[0],
-                    fileData: data.file_data,
-                    fileName: data.file_name
+                    fileData: data.file_data || undefined,
+                    fileName: data.file_name || undefined
                 };
                 setDocuments(prev => [mappedDoc, ...prev]);
             }
@@ -200,7 +210,40 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
     };
 
-    const updateIndustry = (ind: string) => setIndustry(ind);
+    const updateIndustry = async (ind: string) => {
+        setIndustry(ind);
+
+        if (!user) return;
+
+        try {
+            // Get Org ID
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('organization_id')
+                .eq('id', user.id)
+                .single();
+
+            if (!profile?.organization_id) return;
+
+            // Fetch current onboarding data first to merge
+            const { data: org } = await supabase
+                .from('organizations')
+                .select('onboarding_data')
+                .eq('id', profile.organization_id)
+                .single();
+
+            const currentData = (org?.onboarding_data as any) || {};
+            const updatedData = { ...currentData, industry: ind };
+
+            await supabase
+                .from('organizations')
+                .update({ onboarding_data: updatedData })
+                .eq('id', profile.organization_id);
+
+        } catch (error) {
+            console.error('Error updating industry:', error);
+        }
+    };
 
     const addCategory = async (cat: Omit<VaultCategory, 'id'>) => {
         if (!user) return;
@@ -230,8 +273,8 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 setCustomCategories(prev => [...prev, {
                     id: data.id,
                     name: data.name,
-                    color: data.color,
-                    icon: data.icon
+                    color: data.color || 'blue',
+                    icon: data.icon || 'Folder'
                 }]);
             }
 

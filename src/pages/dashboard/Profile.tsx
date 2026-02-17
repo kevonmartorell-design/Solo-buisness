@@ -1,5 +1,6 @@
 
 
+
 import {
     Menu,
     Settings,
@@ -12,13 +13,172 @@ import {
     Save,
     Star,
     Sparkles,
-    Plus
+    Plus,
+    Loader2
 } from 'lucide-react';
-import { useState } from 'react';
-import { mockReviews, mockPortfolioImages } from '../../data/mockReviews';
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import type { Database } from '../../types/supabase';
+
+type ProfileData = Database['public']['Tables']['profiles']['Row'];
+type OrganizationData = Database['public']['Tables']['organizations']['Row'];
+type ReviewData = Database['public']['Tables']['ratings_reviews']['Row'] & {
+    client?: { name: string } | null;
+};
 
 const Profile = () => {
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'portfolio'>('overview');
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    // Form State
+    const [profile, setProfile] = useState<ProfileData | null>(null);
+    const [organization, setOrganization] = useState<OrganizationData | null>(null);
+    const [reviews, setReviews] = useState<ReviewData[]>([]);
+    const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
+
+    // Editable Fields
+    const [businessBio, setBusinessBio] = useState('');
+    const [industry, setIndustry] = useState('');
+    const [location, setLocation] = useState('');
+    const [website, setWebsite] = useState('');
+    const [socialHandle, setSocialHandle] = useState('');
+    const [orgName, setOrgName] = useState('');
+
+    useEffect(() => {
+        if (user?.id) {
+            fetchData();
+        }
+    }, [user?.id]);
+
+    const fetchData = async () => {
+        if (!user?.id) return;
+        setLoading(true);
+        try {
+            // Fetch Profile
+            const { data, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (profileError) throw profileError;
+            const profileData = data as ProfileData;
+            setProfile(profileData);
+
+            // Set initial values from profile or defaults
+            setBusinessBio(profileData.bio || '');
+
+            if (profileData.organization_id) {
+                const { data: orgDataRes, error: orgError } = await (supabase as any)
+                    .from('organizations')
+                    .select('*')
+                    .eq('id', profileData.organization_id)
+                    .single();
+
+                if (orgError) throw orgError;
+                const orgData = orgDataRes as OrganizationData;
+                setOrganization(orgData);
+                setOrgName(orgData.business_name || '');
+
+                // Extract settings from JSONb
+                const settings = (orgData.settings as any) || {};
+                const onboarding = (orgData.onboarding_data as any) || {};
+
+                setIndustry(onboarding.industry || settings.industry || 'Heavy Infrastructure');
+                setLocation(onboarding.location || settings.location || 'Austin, TX');
+                setWebsite(settings.website || 'industrialresilience.com');
+                setSocialHandle(settings.social_handle || '@industrial_phoenix');
+
+                // Portfolio Images (from settings)
+                if (settings.portfolio_images && Array.isArray(settings.portfolio_images)) {
+                    setPortfolioImages(settings.portfolio_images);
+                } else {
+                    setPortfolioImages([]);
+                }
+
+                // Fetch Reviews
+                const { data: reviewsData, error: reviewsError } = await (supabase as any)
+                    .from('ratings_reviews')
+                    .select(`
+                        *,
+                        client:clients (name)
+                    `)
+                    .eq('organization_id', profileData.organization_id)
+                    .order('created_at', { ascending: false });
+
+                if (reviewsError) throw reviewsError;
+                setReviews(reviewsData || []);
+            }
+        } catch (error) {
+            console.error('Error fetching profile data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!user?.id || !profile) return;
+        setSaving(true);
+        try {
+            // Update Profile
+            const { error: profileUpdateError } = await (supabase as any)
+                .from('profiles')
+                .update({
+                    bio: businessBio,
+                    // updated_at: new Date().toISOString() // Supabase handles this if set up, but let's be safe
+                })
+                .eq('id', user.id);
+
+            if (profileUpdateError) throw profileUpdateError;
+
+            // Update Organization if exists
+            if (organization) {
+                const currentSettings = (organization.settings as any) || {};
+                const currentOnboarding = (organization.onboarding_data as any) || {};
+
+                const { error: orgUpdateError } = await (supabase as any)
+                    .from('organizations')
+                    .update({
+                        business_name: orgName,
+                        settings: {
+                            ...currentSettings,
+                            website,
+                            social_handle: socialHandle,
+                            location // storing location in settings for now if table doesn't have it
+                        },
+                        onboarding_data: {
+                            ...currentOnboarding,
+                            industry,
+                            location
+                        }
+                    })
+                    .eq('id', organization.id);
+
+                if (orgUpdateError) throw orgUpdateError;
+            }
+
+            // Show success feedback (console for now)
+            console.log('Saved successfully');
+            await fetchData(); // Refresh data
+
+        } catch (error) {
+            console.error('Error saving profile:', error);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-[#f8f6f6] dark:bg-[#211611]">
+                <Loader2 className="w-8 h-8 text-[#de5c1b] animate-spin" />
+            </div>
+        );
+    }
+
     return (
         <div className="bg-[#f8f6f6] dark:bg-[#211611] text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
             {/* Top Navigation */}
@@ -52,14 +212,18 @@ const Profile = () => {
                     <div className="relative mb-6">
                         <div className="absolute -inset-4 bg-[#de5c1b]/20 rounded-full blur-2xl"></div>
                         <div className="relative bg-[#211611] border-2 border-[#de5c1b] size-24 rounded-full flex items-center justify-center" style={{ textShadow: '0 0 15px rgba(222, 92, 27, 0.4)' }}>
-                            <Cpu className="text-[#de5c1b] w-14 h-14" />
+                            {profile?.avatar_url ? (
+                                <img src={profile.avatar_url} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                                <Cpu className="text-[#de5c1b] w-14 h-14" />
+                            )}
                         </div>
                     </div>
                     <div className="text-center z-10">
-                        <h1 className="text-2xl font-bold font-display tracking-tight text-white px-2">Industrial Resilience Co.</h1>
-                        <p className="text-[#de5c1b] font-medium">@industrial_phoenix</p>
+                        <h1 className="text-2xl font-bold font-display tracking-tight text-white px-2">{orgName || profile?.name || 'Your Organization'}</h1>
+                        <p className="text-[#de5c1b] font-medium">{socialHandle || '@username'}</p>
                         <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-[#de5c1b]/10 border border-[#de5c1b]/30 rounded-full text-xs font-bold text-[#de5c1b] uppercase tracking-widest">
-                            Est. 2024
+                            Est. {organization?.created_at ? new Date(organization.created_at).getFullYear() : '2024'}
                         </div>
                     </div>
                 </div>
@@ -73,10 +237,19 @@ const Profile = () => {
                             </div>
                             <div className="overflow-hidden">
                                 <p className="text-white/80 text-xs font-bold uppercase tracking-wider">Public Booking Link</p>
-                                <p className="text-white font-semibold truncate max-w-[150px] sm:max-w-xs">resilience.io/book/irc</p>
+                                <p className="text-white font-semibold truncate max-w-[150px] sm:max-w-xs cursor-pointer hover:underline" title="Click to test link">
+                                    {orgName ? `${orgName.replace(/\s+/g, '').toLowerCase()}.kevonmartorell.com/booking` : 'your-business.kevonmartorell.com/booking'}
+                                </p>
                             </div>
                         </div>
-                        <button className="bg-white text-[#de5c1b] px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 active:scale-95 transition-transform shrink-0">
+                        <button
+                            onClick={() => {
+                                const link = orgName ? `${orgName.replace(/\s+/g, '').toLowerCase()}.kevonmartorell.com/booking` : 'your-business.kevonmartorell.com/booking';
+                                navigator.clipboard.writeText(link);
+                                alert('Link copied to clipboard!'); // Simple feedback for now
+                            }}
+                            className="bg-white text-[#de5c1b] px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 active:scale-95 transition-transform shrink-0"
+                        >
                             <Copy className="w-4 h-4" />
                             Copy
                         </button>
@@ -117,29 +290,50 @@ const Profile = () => {
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Organization Name</label>
-                                        <input className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#de5c1b] outline-none transition-all dark:text-white font-medium" type="text" defaultValue="Industrial Resilience Co." />
+                                        <input
+                                            className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#de5c1b] outline-none transition-all dark:text-white font-medium"
+                                            type="text"
+                                            value={orgName}
+                                            onChange={(e) => setOrgName(e.target.value)}
+                                        />
                                     </div>
 
                                     <div>
                                         <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Business Bio</label>
-                                        <textarea className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#de5c1b] outline-none transition-all dark:text-white min-h-[100px] resize-none font-medium" defaultValue="Engineering strength through innovation. We specialize in retrofitting legacy infrastructure with next-gen resilience tech."></textarea>
+                                        <textarea
+                                            className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#de5c1b] outline-none transition-all dark:text-white min-h-[100px] resize-none font-medium"
+                                            value={businessBio}
+                                            onChange={(e) => setBusinessBio(e.target.value)}
+                                        ></textarea>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Industry</label>
                                             <div className="relative">
-                                                <select className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 appearance-none focus:ring-2 focus:ring-[#de5c1b] outline-none dark:text-white font-medium">
+                                                <select
+                                                    className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 appearance-none focus:ring-2 focus:ring-[#de5c1b] outline-none dark:text-white font-medium"
+                                                    value={industry}
+                                                    onChange={(e) => setIndustry(e.target.value)}
+                                                >
                                                     <option>Heavy Infrastructure</option>
                                                     <option>Tech & Software</option>
                                                     <option>Consulting</option>
+                                                    <option>Construction</option>
+                                                    <option>Security</option>
+                                                    <option>Other</option>
                                                 </select>
                                                 <ChevronDown className="absolute right-4 top-3.5 w-5 h-5 text-slate-400 pointer-events-none" />
                                             </div>
                                         </div>
                                         <div>
                                             <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Location</label>
-                                            <input className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#de5c1b] outline-none transition-all dark:text-white font-medium" type="text" defaultValue="Austin, TX" />
+                                            <input
+                                                className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-[#de5c1b]/20 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#de5c1b] outline-none transition-all dark:text-white font-medium"
+                                                type="text"
+                                                value={location}
+                                                onChange={(e) => setLocation(e.target.value)}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -152,20 +346,34 @@ const Profile = () => {
                                         <div className="bg-[#de5c1b]/10 p-2.5 rounded-lg text-[#de5c1b]">
                                             <Globe className="w-5 h-5" />
                                         </div>
-                                        <input className="flex-1 bg-transparent border-b border-slate-200 dark:border-slate-700 py-2 focus:border-[#de5c1b] outline-none dark:text-white font-medium" type="text" defaultValue="industrialresilience.com" />
+                                        <input
+                                            className="flex-1 bg-transparent border-b border-slate-200 dark:border-slate-700 py-2 focus:border-[#de5c1b] outline-none dark:text-white font-medium"
+                                            type="text"
+                                            value={website}
+                                            onChange={(e) => setWebsite(e.target.value)}
+                                        />
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <div className="bg-[#de5c1b]/10 p-2.5 rounded-lg text-[#de5c1b]">
                                             <Share2 className="w-5 h-5" />
                                         </div>
-                                        <input className="flex-1 bg-transparent border-b border-slate-200 dark:border-slate-700 py-2 focus:border-[#de5c1b] outline-none dark:text-white font-medium" type="text" defaultValue="@industrial_phoenix" />
+                                        <input
+                                            className="flex-1 bg-transparent border-b border-slate-200 dark:border-slate-700 py-2 focus:border-[#de5c1b] outline-none dark:text-white font-medium"
+                                            type="text"
+                                            value={socialHandle}
+                                            onChange={(e) => setSocialHandle(e.target.value)}
+                                        />
                                     </div>
                                 </div>
                             </div>
 
-                            <button className="w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-[#de5c1b]/20 transition-all flex items-center justify-center gap-2">
-                                <Save className="w-5 h-5" />
-                                Save Changes
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-[#de5c1b]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                                {saving ? 'Saving...' : 'Save Changes'}
                             </button>
                         </div>
                     )}
@@ -173,14 +381,18 @@ const Profile = () => {
                     {/* REVIEWS TAB */}
                     {activeTab === 'reviews' && (
                         <div className="space-y-6 animate-fade-in">
-                            {/* Summary Card */}
+                            {/* Summary Card - Real Data Calculation */}
                             <div className="bg-gradient-to-br from-[#de5c1b] to-[#b84309] rounded-2xl p-6 text-white shadow-lg shadow-[#de5c1b]/20 flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-4xl font-bold mb-1">4.9</h3>
+                                    <h3 className="text-4xl font-bold mb-1">
+                                        {reviews.length > 0
+                                            ? (reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / reviews.length).toFixed(1)
+                                            : '0.0'}
+                                    </h3>
                                     <div className="flex items-center gap-1 text-white/90 mb-2">
                                         {[1, 2, 3, 4, 5].map(i => <Star key={i} className="w-5 h-5 fill-current" />)}
                                     </div>
-                                    <p className="text-sm font-medium text-white/80">Based on 128 reviews</p>
+                                    <p className="text-sm font-medium text-white/80">Based on {reviews.length} reviews</p>
                                 </div>
                                 <div className="text-right">
                                     <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg inline-flex items-center gap-2 mb-2">
@@ -193,28 +405,38 @@ const Profile = () => {
 
                             {/* Review List */}
                             <div className="space-y-4">
-                                {mockReviews.map(review => (
+                                {reviews.map(review => (
                                     <div key={review.id} className="bg-white dark:bg-[#2a1d17] p-5 rounded-2xl shadow-sm border border-[#de5c1b]/5 hover:border-[#de5c1b]/20 transition-colors">
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-full ${review.avatarColor} flex items-center justify-center text-[#de5c1b] font-bold text-lg`}>
-                                                    {review.clientName.charAt(0)}
+                                                <div className={`w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[#de5c1b] font-bold text-lg`}>
+                                                    {(review.client?.name || 'Client').charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-slate-900 dark:text-white">{review.clientName}</h4>
-                                                    <p className="text-xs text-slate-500">{review.date}</p>
+                                                    <h4 className="font-bold text-slate-900 dark:text-white">{review.client?.name || 'Verified Client'}</h4>
+                                                    <p className="text-xs text-slate-500">
+                                                        {new Date(review.created_at).toLocaleDateString()}
+                                                    </p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-black/20 px-2 py-1 rounded-lg">
                                                 <Star className="w-3.5 h-3.5 fill-[#de5c1b] text-[#de5c1b]" />
-                                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{review.rating}.0</span>
+                                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                                    {review.rating ? review.rating.toFixed(1) : '5.0'}
+                                                </span>
                                             </div>
                                         </div>
                                         <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
-                                            "{review.comment}"
+                                            "{review.comment || review.testimonial_text}"
                                         </p>
                                     </div>
                                 ))}
+                                {reviews.length === 0 && (
+                                    <div className="text-center py-10 bg-slate-50 dark:bg-white/5 rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+                                        <Star className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                        <p className="text-slate-500">No reviews yet.</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -224,14 +446,27 @@ const Profile = () => {
                         <div className="space-y-6 animate-fade-in">
                             <div className="flex justify-between items-center">
                                 <h3 className="font-bold text-lg dark:text-white">Portfolio Gallery</h3>
-                                <button className="flex items-center gap-2 text-[#de5c1b] font-bold text-sm bg-[#de5c1b]/10 px-4 py-2 rounded-lg hover:bg-[#de5c1b]/20 transition-colors">
+                                <button
+                                    onClick={async () => {
+                                        const url = prompt('Enter Image URL:');
+                                        if (url && organization) {
+                                            const newImages = [...portfolioImages, url];
+                                            setPortfolioImages(newImages);
+                                            // Save immediately to settings
+                                            const currentSettings = (organization.settings as any) || {};
+                                            await (supabase as any).from('organizations').update({
+                                                settings: { ...currentSettings, portfolio_images: newImages }
+                                            }).eq('id', organization.id);
+                                        }
+                                    }}
+                                    className="flex items-center gap-2 text-[#de5c1b] font-bold text-sm bg-[#de5c1b]/10 px-4 py-2 rounded-lg hover:bg-[#de5c1b]/20 transition-colors">
                                     <Plus className="w-4 h-4" />
                                     Add Photo
                                 </button>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
-                                {mockPortfolioImages.map((img, idx) => (
+                                {portfolioImages.map((img, idx) => (
                                     <div key={idx} className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer">
                                         <img src={img} alt="Portfolio" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -241,6 +476,11 @@ const Profile = () => {
                                         </div>
                                     </div>
                                 ))}
+                                {portfolioImages.length === 0 && (
+                                    <div className="col-span-2 text-center py-10 bg-slate-50 dark:bg-white/5 rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+                                        <p className="text-slate-500">No photos added yet.</p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="p-6 bg-[#de5c1b]/5 rounded-2xl border border-[#de5c1b]/10 text-center">

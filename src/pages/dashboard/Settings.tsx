@@ -11,7 +11,7 @@ import { useVault } from '../../contexts/VaultContext';
 import { useState } from 'react';
 
 const Settings = () => {
-    const { user, updateRole, updateTier } = useAuth();
+    const { user, updateRole, updateTier, logout } = useAuth();
     const {
         companyName, setCompanyName,
         logoUrl, setLogoUrl,
@@ -22,7 +22,8 @@ const Settings = () => {
         smtpSettings, setSmtpSettings,
         smsSenderId, setSmsSenderId,
         showPoweredBy, setShowPoweredBy,
-        resetBranding
+        resetBranding,
+        saveBranding
     } = useBranding();
     const { industry, updateIndustry, customCategories, addCategory, deleteCategory } = useVault();
 
@@ -578,10 +579,29 @@ const Settings = () => {
                 </section>
 
                 <div className="mt-12 px-4 flex flex-col gap-3">
-                    <button className="bg-[#de5c1b] text-white w-full py-4 rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-[#de5c1b]/20 active:scale-[0.98] transition-transform">
+                    <button
+                        onClick={async () => {
+                            if (window.confirm('Save all branding and settings changes?')) {
+                                const success = await saveBranding();
+                                if (success) {
+                                    alert('Settings saved successfully!');
+                                } else {
+                                    alert('Failed to save settings. Please try again.');
+                                }
+                            }
+                        }}
+                        className="bg-[#de5c1b] text-white w-full py-4 rounded-xl font-bold uppercase tracking-widest text-sm shadow-lg shadow-[#de5c1b]/20 active:scale-[0.98] transition-transform"
+                    >
                         Save All Changes
                     </button>
-                    <button className="w-full py-4 rounded-xl font-bold uppercase tracking-widest text-sm text-red-500/70 border border-red-500/20 active:bg-red-500/10 transition-colors">
+                    <button
+                        onClick={() => {
+                            if (window.confirm('Are you sure you want to log out?')) {
+                                logout();
+                            }
+                        }}
+                        className="w-full py-4 rounded-xl font-bold uppercase tracking-widest text-sm text-red-500/70 border border-red-500/20 active:bg-red-500/10 transition-colors"
+                    >
                         Log Out
                     </button>
                     <p className="text-center text-[10px] text-gray-600 mt-4 mb-8">

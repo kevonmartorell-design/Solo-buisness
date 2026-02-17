@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
 interface SmtpSettings {
     host: string;
@@ -27,6 +29,7 @@ interface BrandingContextType {
     showPoweredBy: boolean;
     setShowPoweredBy: (show: boolean) => void;
     resetBranding: () => void;
+    saveBranding: () => Promise<boolean>;
 }
 
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined);
@@ -38,49 +41,114 @@ const hexToRgb = (hex: string) => {
 };
 
 export const BrandingProvider = ({ children }: { children: ReactNode }) => {
-    // Load from local storage or default
-    const [companyName, setCompanyName] = useState(() => localStorage.getItem('companyName') || 'Aegis Cert');
-    const [logoUrl, setLogoUrl] = useState<string | null>(() => localStorage.getItem('logoUrl'));
-    const [primaryColor, setPrimaryColor] = useState(() => localStorage.getItem('primaryColor') || '#de5c1b');
-    const [secondaryColor, setSecondaryColor] = useState(() => localStorage.getItem('secondaryColor') || '#1e293b');
-    const [font, setFont] = useState(() => localStorage.getItem('font') || 'Inter');
-    const [customDomain, setCustomDomain] = useState(() => localStorage.getItem('customDomain') || '');
-    const [smtpSettings, setSmtpSettings] = useState<SmtpSettings>(() => {
-        const saved = localStorage.getItem('smtpSettings');
-        return saved ? JSON.parse(saved) : { host: '', port: '', user: '', pass: '' };
-    });
-    const [smsSenderId, setSmsSenderId] = useState(() => localStorage.getItem('smsSenderId') || '');
-    const [showPoweredBy, setShowPoweredBy] = useState(() => localStorage.getItem('showPoweredBy') === 'true');
+    const { user } = useAuth();
 
-    // Persistence & CSS Variable Update
+    // Default values
+    const [companyName, setCompanyName] = useState('Aegis Cert');
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [primaryColor, setPrimaryColor] = useState('#de5c1b');
+    const [secondaryColor, setSecondaryColor] = useState('#1e293b');
+    const [font, setFont] = useState('Inter');
+    const [customDomain, setCustomDomain] = useState('');
+    const [smtpSettings, setSmtpSettings] = useState<SmtpSettings>({ host: '', port: '', user: '', pass: '' });
+    const [smsSenderId, setSmsSenderId] = useState('');
+    const [showPoweredBy, setShowPoweredBy] = useState(true);
+
+    // CSS Variable Update Effect
     useEffect(() => {
-        localStorage.setItem('companyName', companyName);
-        localStorage.setItem('primaryColor', primaryColor);
-        localStorage.setItem('secondaryColor', secondaryColor);
-        localStorage.setItem('font', font);
-        localStorage.setItem('customDomain', customDomain);
-        localStorage.setItem('smtpSettings', JSON.stringify(smtpSettings));
-        localStorage.setItem('smsSenderId', smsSenderId);
-        localStorage.setItem('showPoweredBy', String(showPoweredBy));
-
-        if (logoUrl) {
-            localStorage.setItem('logoUrl', logoUrl);
-        } else {
-            localStorage.removeItem('logoUrl');
-        }
-
-        // Update CSS Variables
         const root = document.documentElement;
         root.style.setProperty('--color-primary', primaryColor);
         root.style.setProperty('--color-secondary', secondaryColor);
-        root.style.setProperty('--font-family', font); // Assumes generic font names or loaded fonts
+        root.style.setProperty('--font-family', font);
 
         const rgb = hexToRgb(primaryColor);
         if (rgb) {
             root.style.setProperty('--color-primary-rgb', rgb);
         }
+    }, [primaryColor, secondaryColor, font]);
 
-    }, [companyName, logoUrl, primaryColor, secondaryColor, font, customDomain, smtpSettings, smsSenderId, showPoweredBy]);
+    // Load from Supabase on Mount/User Change
+    useEffect(() => {
+        const loadBranding = async () => {
+            if (!user) return;
+
+            try {
+                // Get Org ID
+                const { data: profile } = await (supabase as any)
+                    .from('profiles')
+                    .select('organization_id')
+                    .eq('id', user.id)
+                    .single();
+
+                if (!profile?.organization_id) return;
+
+                // Get Organization Settings
+                const { data: org } = await (supabase as any)
+                    .from('organizations')
+                    .select('business_name, settings')
+                    .eq('id', profile.organization_id)
+                    .single();
+
+                if (org) {
+                    if (org.business_name) setCompanyName(org.business_name);
+
+                    const settings = org.settings as any;
+                    if (settings) {
+                        if (settings.logoUrl) setLogoUrl(settings.logoUrl);
+                        if (settings.primaryColor) setPrimaryColor(settings.primaryColor);
+                        if (settings.secondaryColor) setSecondaryColor(settings.secondaryColor);
+                        if (settings.font) setFont(settings.font);
+                        if (settings.customDomain) setCustomDomain(settings.customDomain);
+                        if (settings.smtpSettings) setSmtpSettings(settings.smtpSettings);
+                        if (settings.smsSenderId) setSmsSenderId(settings.smsSenderId);
+                        if (settings.showPoweredBy !== undefined) setShowPoweredBy(settings.showPoweredBy);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading branding:', error);
+            }
+        };
+
+        loadBranding();
+    }, [user]);
+
+    const saveBranding = async () => {
+        if (!user) return false;
+        try {
+            const { data: profile } = await (supabase as any)
+                .from('profiles')
+                .select('organization_id')
+                .eq('id', user.id)
+                .single();
+
+            if (!profile?.organization_id) return false;
+
+            const settings = {
+                logoUrl,
+                primaryColor,
+                secondaryColor,
+                font,
+                customDomain,
+                smtpSettings,
+                smsSenderId,
+                showPoweredBy
+            };
+
+            const { error } = await (supabase as any)
+                .from('organizations')
+                .update({
+                    business_name: companyName,
+                    settings: settings
+                })
+                .eq('id', profile.organization_id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            console.error('Error saving branding:', error);
+            return false;
+        }
+    };
 
     const resetBranding = () => {
         setCompanyName('Aegis Cert');
@@ -105,7 +173,8 @@ export const BrandingProvider = ({ children }: { children: ReactNode }) => {
             smtpSettings, setSmtpSettings,
             smsSenderId, setSmsSenderId,
             showPoweredBy, setShowPoweredBy,
-            resetBranding
+            resetBranding,
+            saveBranding
         }}>
             {children}
         </BrandingContext.Provider>

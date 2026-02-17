@@ -82,7 +82,7 @@ const Employees = () => {
                     phone: p.phone || 'N/A',
                     location: 'Field', // Placeholder
                     certifications: [], // Placeholder
-                    imgUrl: p.avatar_url || 'https://via.placeholder.com/150',
+                    imgUrl: p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || 'User')}&background=random`,
                     joinDate: new Date(p.created_at).toLocaleDateString()
                 }));
                 setEmployees(mappedEmployees);

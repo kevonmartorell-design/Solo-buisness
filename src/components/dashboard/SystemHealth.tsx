@@ -23,8 +23,8 @@ const SystemHealth = ({ score = 100, title = "System Health", subtext = "All sys
 
             <h3 className="text-white font-bold text-lg mb-2 relative z-10">{title}</h3>
 
-            <div className="relative size-64">
-                <ResponsiveContainer width="100%" height="100%">
+            <div className="relative size-64 min-h-[256px]">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <RadialBarChart
                         cx="50%"
                         cy="50%"

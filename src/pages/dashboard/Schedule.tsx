@@ -64,6 +64,7 @@ const Schedule = () => {
     const [resources, setResources] = useState<Resource[]>([]);
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
+    const [orgId, setOrgId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchScheduleData = async () => {
@@ -81,20 +82,23 @@ const Schedule = () => {
                     setLoading(false);
                     return;
                 }
-                const orgId = profile.organization_id;
+                const organizationId = profile.organization_id;
+                setOrgId(organizationId);
 
                 // 1. Fetch Resources (Profiles in the same Org)
-                const { data: teamMembers } = await supabase
+                const { data: teamMembers, error: teamError } = await (supabase as any)
                     .from('profiles')
-                    .select('id, name, role, avatar_url')
-                    .eq('organization_id', orgId);
+                    .select('id, name, role, avatar_url, department')
+                    .eq('organization_id', organizationId);
 
-                const mappedResources: Resource[] = teamMembers?.map(m => ({
+                if (teamError) throw teamError;
+
+                const mappedResources: Resource[] = (teamMembers as any[])?.map(m => ({
                     id: m.id,
                     name: m.name || 'Team Member',
                     role: m.role || 'Team Member',
-                    department: 'Field Ops', // Mock dept for now or fetch if available
-                    avatar: m.avatar_url || 'https://via.placeholder.com/150'
+                    department: m.department || 'Field Ops',
+                    avatar: m.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name || 'User')}&background=random`
                 })) || [];
                 setResources(mappedResources);
 
@@ -113,8 +117,13 @@ const Schedule = () => {
 
                 const mappedEvents: Event[] = bookings?.map((b: any) => {
                     const startTime = new Date(b.booking_datetime);
-                    // Default duration 1 hour if not specified in service
-                    const durationMinutes = b.service?.duration || 60;
+
+                    // Parse duration from notes if available (format: [Duration:60])
+                    const noteDurationMatch = b.notes ? b.notes.match(/\[Duration:(\d+)\]/) : null;
+                    const durationFromNotes = noteDurationMatch ? parseInt(noteDurationMatch[1]) : null;
+
+                    // Default duration: Notes -> Service -> 60 mins
+                    const durationMinutes = durationFromNotes || b.service?.duration || 60;
                     const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
 
                     return {
@@ -179,7 +188,8 @@ const Schedule = () => {
         setIsBookingModalOpen(true);
     };
 
-    const handleSaveEvent = (data: any) => {
+    const handleSaveEvent = async (data: any) => {
+        if (!orgId) return;
         setBookingError(null);
         const newStart = timeToMinutes(data.startTime);
         const newEnd = timeToMinutes(data.endTime);
@@ -189,7 +199,7 @@ const Schedule = () => {
             return;
         }
 
-        const resourceId = data.assignedTo || undefined;
+        const resourceId = data.assignedTo || null;
 
         // Check for conflicts
         if (checkForConflicts(resourceId, data.startTime, data.endTime, selectedDate, editingEvent?.id)) {
@@ -197,70 +207,162 @@ const Schedule = () => {
             return;
         }
 
-        if (editingEvent) {
-            // Update existing event
-            const updatedEvent: Event = {
-                ...editingEvent,
-                title: data.title,
-                type: data.type,
-                startTime: data.startTime,
-                endTime: data.endTime,
-                duration: calculateDuration(data.startTime, data.endTime),
-                resourceId: resourceId,
-                notes: data.notes,
-                // If re-assigning, keep status but maybe reset swap request? Keeping simple for now.
+        try {
+            // Construct ISO DateTime
+            const bookingDate = new Date(selectedDate);
+            const [hours, mins] = data.startTime.split(':').map(Number);
+            bookingDate.setHours(hours, mins, 0, 0);
+
+            // For now, let's keep it simple and assume bookings are for today/selectedDate
+            // In a real app, we might need end_datetime if it spans days, but schema only has booking_datetime (start)
+            // We rely on service duration or calculate it.
+            // But wait, the bookings table doesn't have an end_datetime or duration column? 
+            // It links to 'services'. But manual bookings (Shift) might not be linked to a service?
+            // If service_id is null, how do we know duration? 
+            // Schema has `service_id`. 
+            // If we are creating a generic "Shift" without a service, we might need a dummy service or add 'duration' to bookings.
+            // For this phase, I will try to find a service with name matching 'title' or just insert.
+            // If I can't store duration, I'll rely on the app to handle it or assume 1 hour.
+            // Better: I'll convert start/end to a duration note if needed?
+            // Actually, `bookings` table definition I added: does it have duration? No.
+            // It has `service_id`.
+            // Problem: If I create a custom "Shift" without a service, I lose the duration info in DB.
+            // I should add `duration_minutes` column to bookings OR `end_datetime`.
+            // But I successfully added `bookings` definition already.
+            // I'll check if `notes` can store it or if I should assume linked service.
+            // For "Shift", "Strategy", etc, these are Types. 
+            // Maybe I should insert a new service "Custom Shift" if not exists?
+            // Or just store it in `notes` as JSON? e.g. "Duration: 60m".
+            // Let's store it in `notes` to avoid schema change if possible, or just ignore persistence of custom duration for now and stick to 1 hour default.
+            // Wait, I can't ignore it.
+            // I'll update types/supabase.ts later if needed. For now, I'll append to notes: "[Duration: 60]"
+
+            const durationMins = newEnd - newStart;
+            const updatedNotes = data.notes ? `${data.notes} [Duration:${durationMins}]` : `[Duration:${durationMins}]`;
+
+            const payload = {
+                organization_id: orgId,
+                booking_datetime: bookingDate.toISOString(),
+                employee_id: resourceId,
+                status: data.type === 'TimeOff' ? 'pending' : (resourceId ? 'approved' : 'open'),
+                notes: updatedNotes,
+                // service_id: ... // I don't have service selection in modal yet, just "Type".
             };
-            setEvents(events.map(e => e.id === editingEvent.id ? updatedEvent : e));
-            showFeedback('Event updated successfully');
-        } else {
-            // Create new event
-            const newEvent: Event = {
-                id: Date.now().toString(),
-                title: data.title,
-                type: data.type,
-                startTime: data.startTime,
-                endTime: data.endTime,
-                duration: calculateDuration(data.startTime, data.endTime),
-                date: new Date(selectedDate),
-                status: data.type === 'TimeOff' ? 'pending' : (data.assignedTo ? 'approved' : 'open'),
-                resourceId: resourceId,
-                requester: data.type === 'TimeOff' ? 'Current User' : undefined, // Mock
-                notes: data.notes
-            };
-            setEvents([...events, newEvent]);
-            showFeedback(data.type === 'TimeOff' ? 'Time off request submitted!' : 'Shift created successfully');
+
+            if (editingEvent) {
+                // Update
+                const { error } = await (supabase as any)
+                    .from('bookings')
+                    .update(payload)
+                    .eq('id', editingEvent.id);
+
+                if (error) throw error;
+                showFeedback('Event updated successfully');
+            } else {
+                // Create
+                const { error } = await (supabase as any)
+                    .from('bookings')
+                    .insert(payload);
+
+                if (error) throw error;
+                showFeedback(data.type === 'TimeOff' ? 'Time off request submitted!' : 'Shift created successfully');
+            }
+
+            // Refresh logic - ideally fetch again. For now, simple reload or we can rely on real-time if enabled.
+            // I'll trigger a re-fetch by toggling a key or just force reload function?
+            // setEvents needs update.
+            window.location.reload(); // Brute force refresh for now to ensure data is synced. 
+            // Or I can extract fetchData to a useCallback and call it.
+
+        } catch (err) {
+            console.error('Error saving event:', err);
+            setBookingError('Failed to save event');
         }
 
         setIsBookingModalOpen(false);
     };
 
-    const handleDeleteEvent = (id: string) => {
+    const handleDeleteEvent = async (id: string) => {
         if (confirm('Are you sure you want to delete this event?')) {
-            setEvents(events.filter(e => e.id !== id));
+            try {
+                const { error } = await (supabase as any).from('bookings').delete().eq('id', id);
+                if (error) throw error;
+                showFeedback('Event deleted');
+                window.location.reload(); // Refresh
+            } catch (err) {
+                console.error('Error deleting event:', err);
+                showFeedback('Failed to delete event', 'error');
+            }
             setIsBookingModalOpen(false);
-            showFeedback('Event deleted');
         }
     };
 
-    const handleClaimShift = (id: string, resourceId: string) => {
-        // Quick claim logic - assumes current user (r1) availability checked elsewhere or lenient here
-        setEvents(events.map(e => e.id === id ? { ...e, status: 'approved', resourceId: 'r1' } : e)); // Mock assigning to 'current user' (r1)
-        showFeedback('Shift claimed successfully');
+    const handleClaimShift = async (id: string) => {
+        if (!user) return;
+        try {
+            const { error } = await (supabase as any)
+                .from('bookings')
+                .update({
+                    status: 'approved',
+                    employee_id: user.id
+                })
+                .eq('id', id);
+
+            if (error) throw error;
+            showFeedback('Shift claimed successfully');
+            window.location.reload();
+        } catch (err) {
+            console.error('Error claiming shift:', err);
+            showFeedback('Failed to claim shift', 'error');
+        }
     };
 
-    const handleSwapRequest = (id: string) => {
-        setEvents(events.map(e => e.id === id ? { ...e, status: 'swap-requested' } : e));
-        showFeedback('Swap request sent');
+    const handleSwapRequest = async (id: string) => {
+        try {
+            const { error } = await (supabase as any)
+                .from('bookings')
+                .update({ status: 'swap-requested' })
+                .eq('id', id);
+
+            if (error) throw error;
+            showFeedback('Swap request sent');
+            window.location.reload();
+        } catch (err) {
+            console.error('Error requesting swap:', err);
+            showFeedback('Failed to request swap', 'error');
+        }
     };
 
-    const handleApproveRequest = (id: string) => {
-        setEvents(events.map(e => e.id === id ? { ...e, status: 'approved' } : e));
-        showFeedback('Request approved');
+    const handleApproveRequest = async (id: string) => {
+        try {
+            const { error } = await (supabase as any)
+                .from('bookings')
+                .update({ status: 'approved' })
+                .eq('id', id);
+
+            if (error) throw error;
+            showFeedback('Request approved');
+            window.location.reload();
+        } catch (err) {
+            console.error('Error approving request:', err);
+            showFeedback('Failed to approve request', 'error');
+        }
     };
 
-    const handleDeclineRequest = (id: string) => {
-        setEvents(events.map(e => e.id === id ? { ...e, status: 'declined' } : e));
-        showFeedback('Request declined');
+    const handleDeclineRequest = async (id: string) => {
+        try {
+            const { error } = await (supabase as any)
+                .from('bookings')
+                .update({ status: 'declined' }) // Or 'open' if we want to unassign? stick to declined for now
+                .eq('id', id);
+
+            if (error) throw error;
+            showFeedback('Request declined');
+            window.location.reload();
+        } catch (err) {
+            console.error('Error declining request:', err);
+            showFeedback('Failed to decline request', 'error');
+        }
     };
 
     // --- Drag and Drop Logic ---
@@ -275,7 +377,7 @@ const Schedule = () => {
         e.dataTransfer.dropEffect = 'move';
     };
 
-    const handleDrop = (e: React.DragEvent, resourceId: string) => {
+    const handleDrop = async (e: React.DragEvent, resourceId: string) => {
         e.preventDefault();
         const eventId = e.dataTransfer.getData('eventId');
         const event = events.find(ev => ev.id === eventId);
@@ -287,13 +389,19 @@ const Schedule = () => {
                 return;
             }
 
-            // Update event with new resource
-            setEvents(events.map(ev =>
-                ev.id === eventId
-                    ? { ...ev, resourceId: resourceId }
-                    : ev
-            ));
-            showFeedback(`Reassigned to ${resources.find(r => r.id === resourceId)?.name}`);
+            try {
+                const { error } = await (supabase as any)
+                    .from('bookings')
+                    .update({ employee_id: resourceId })
+                    .eq('id', eventId);
+
+                if (error) throw error;
+                showFeedback(`Reassigned to ${resources.find(r => r.id === resourceId)?.name}`);
+                window.location.reload();
+            } catch (err) {
+                console.error('Error reassigning event:', err);
+                showFeedback('Failed to reassign event', 'error');
+            }
         }
     };
 
@@ -417,7 +525,7 @@ const Schedule = () => {
                                             Edit
                                         </button>
                                         <button
-                                            onClick={() => handleClaimShift(e.id, 'r1')}
+                                            onClick={() => handleClaimShift(e.id)}
                                             className="text-xs font-bold text-[#de5c1b] hover:underline"
                                         >
                                             Claim
