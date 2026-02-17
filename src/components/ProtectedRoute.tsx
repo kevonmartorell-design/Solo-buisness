@@ -1,12 +1,13 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth, type Role } from '../contexts/AuthContext';
+import { useAuth, type Role, type Tier } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
     allowedRoles?: Role[];
+    allowedTiers?: Tier[];
 }
 
-const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, allowedRoles, allowedTiers }: ProtectedRouteProps) => {
     const { user, hasPermission } = useAuth();
 
     if (!user) {
@@ -14,7 +15,12 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     }
 
     if (allowedRoles && !hasPermission(allowedRoles)) {
-        // Redirect to dashboard if unauthorized for specific route, or handle 403
+        return <Navigate to="/dashboard" replace />;
+    }
+
+    if (allowedTiers && !allowedTiers.includes(user.tier)) {
+        // specific redirect logic could go here, for now default to dashboard
+        // which will be smart enough to show them their safe home
         return <Navigate to="/dashboard" replace />;
     }
 

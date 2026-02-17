@@ -1,8 +1,10 @@
 
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Landing = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     return (
         <div className="bg-[#181311] font-display antialiased overflow-x-hidden text-white min-h-screen">
@@ -19,9 +21,9 @@ const Landing = () => {
                         <span className="text-xl font-bold tracking-tighter uppercase text-white">Aegis Cert</span>
                     </div>
                     <div className="hidden md:flex gap-8 text-sm font-medium text-white/60 uppercase tracking-widest">
-                        <a className="hover:text-[#de5c1b] transition-colors cursor-pointer">Systems</a>
-                        <a className="hover:text-[#de5c1b] transition-colors cursor-pointer">Innovation</a>
-                        <a className="hover:text-[#de5c1b] transition-colors cursor-pointer">About</a>
+                        <a href="#features" className="hover:text-[#de5c1b] transition-colors cursor-pointer">Systems</a>
+                        <a href="#vault" className="hover:text-[#de5c1b] transition-colors cursor-pointer">Innovation</a>
+                        <a href="#about" className="hover:text-[#de5c1b] transition-colors cursor-pointer">About</a>
                     </div>
                     <div className="flex items-center gap-4">
                         <button
@@ -43,7 +45,8 @@ const Landing = () => {
             <main className="relative z-10">
                 <div className="relative w-full min-h-[85vh] flex flex-col items-center justify-center px-4 py-20 overflow-hidden">
                     <div className="absolute inset-0 z-0 overflow-hidden opacity-30 pointer-events-none">
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#de5c1b]/10 rounded-full blur-[120px]"></div>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#de5c1b]/10 rounded-full blur-[120px] animate-pulse-slow"></div>
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px]"></div>
                     </div>
                     <div className="relative z-10 max-w-5xl w-full text-center">
                         <div className="mb-12 flex justify-center">
@@ -119,7 +122,35 @@ const Landing = () => {
                     </div>
                 </div>
 
-                <section className="max-w-7xl mx-auto px-4 py-24">
+                <section className="py-24 bg-[#1c1917]/50 border-y border-white/5 relative overflow-hidden">
+                    <div className="max-w-7xl mx-auto px-4 relative z-10">
+                        <div className="text-center mb-16">
+                            <span className="text-[#de5c1b] font-bold tracking-widest uppercase text-sm mb-4 block">Versatility</span>
+                            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 uppercase tracking-tight">Built For <span className="text-[#de5c1b]">Your Industry</span></h2>
+                            <p className="text-white/60 max-w-2xl mx-auto">
+                                Adaptable architecture that molds to your specific operational requirements, from strict compliance sectors to high-velocity retail.
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            {[
+                                { icon: 'security', title: 'Security Forces', desc: 'CLEET tracking, post orders, and guard patrols.' },
+                                { icon: 'construction', title: 'Construction', desc: 'Site safety certs, crew scheduling, and asset logging.' },
+                                { icon: 'medical_services', title: 'Healthcare', desc: 'HIPAA compliance, shift rotations, and credential monitoring.' },
+                                { icon: 'local_shipping', title: 'Logistics', desc: 'Driver logs, fleet maintenance, and route optimization.' }
+                            ].map((industry, i) => (
+                                <div key={i} className="bg-white/5 border border-white/5 p-6 rounded-xl hover:bg-white/10 hover:border-[#de5c1b]/30 transition-all group cursor-default">
+                                    <div className="w-12 h-12 rounded-lg bg-[#de5c1b]/10 flex items-center justify-center text-[#de5c1b] mb-4 group-hover:scale-110 transition-transform">
+                                        <span className="material-symbols-outlined">{industry.icon}</span>
+                                    </div>
+                                    <h4 className="text-white font-bold mb-2">{industry.title}</h4>
+                                    <p className="text-white/40 text-xs leading-relaxed">{industry.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                <section id="features" className="max-w-7xl mx-auto px-4 py-24">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="bg-[#1c1917] p-8 rounded-xl border border-white/5 group hover:border-[#de5c1b]/50 transition-all">
                             <div className="w-12 h-12 rounded-lg bg-[#de5c1b]/20 flex items-center justify-center text-[#de5c1b] mb-6 group-hover:scale-110 transition-transform">
@@ -160,7 +191,7 @@ const Landing = () => {
                     </div>
                 </section>
 
-                <section className="w-full px-4 py-20 bg-[#1c1917]/30 border-t border-white/5">
+                <section id="about" className="w-full px-4 py-20 bg-[#1c1917]/30 border-t border-white/5">
                     <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12">
                         <div className="w-full md:w-1/2">
                             <h2 className="text-4xl font-bold text-white mb-6 tracking-tight uppercase">Intelligent Business Management</h2>
@@ -191,7 +222,7 @@ const Landing = () => {
                         </div>
                     </div>
                 </section>
-                <section className="max-w-7xl mx-auto px-4 py-24 border-t border-white/5">
+                <section id="vault" className="max-w-7xl mx-auto px-4 py-24 border-t border-white/5">
                     <div className="flex flex-col md:flex-row-reverse items-center gap-16">
                         <div className="w-full md:w-1/2">
                             <div className="flex items-center gap-3 mb-4">
@@ -293,7 +324,10 @@ const Landing = () => {
                                 <li>Leave Ratings & Reviews</li>
                                 <li>Post Testimonials</li>
                             </ul>
-                            <button className="w-full py-3 border border-white/20 text-white rounded-lg font-bold hover:bg-white/5 transition-colors uppercase text-sm">
+                            <button
+                                onClick={() => user ? navigate('/dashboard') : navigate('/signup?tier=Free')}
+                                className="w-full py-3 border border-white/20 text-white rounded-lg font-bold hover:bg-white/5 transition-colors uppercase text-sm"
+                            >
                                 Join as Client
                             </button>
                         </div>
@@ -316,7 +350,10 @@ const Landing = () => {
                                 <li className="flex items-center gap-2 justify-center"><span className="material-symbols-outlined text-[#de5c1b] text-sm">check</span> Client CRM</li>
                                 <li className="flex items-center gap-2 justify-center"><span className="material-symbols-outlined text-[#de5c1b] text-sm">check</span> Automated Reminders</li>
                             </ul>
-                            <button className="w-full py-4 bg-[#de5c1b] text-white rounded-lg font-bold hover:bg-[#de5c1b]/90 transition-colors uppercase text-sm shadow-lg shadow-[#de5c1b]/20">
+                            <button
+                                onClick={() => user ? navigate('/dashboard') : navigate('/signup?tier=Solo')}
+                                className="w-full py-4 bg-[#de5c1b] text-white rounded-lg font-bold hover:bg-[#de5c1b]/90 transition-colors uppercase text-sm shadow-lg shadow-[#de5c1b]/20"
+                            >
                                 Start Free Trial
                             </button>
                         </div>
@@ -336,7 +373,10 @@ const Landing = () => {
                                 <li className="flex items-center gap-2 justify-center"><span className="material-symbols-outlined text-white text-sm">check</span> White Label Domains</li>
                                 <li className="flex items-center gap-2 justify-center"><span className="material-symbols-outlined text-white text-sm">check</span> Custom Branding</li>
                             </ul>
-                            <button className="w-full py-3 border border-white/20 text-white rounded-lg font-bold hover:bg-white/5 transition-colors uppercase text-sm">
+                            <button
+                                onClick={() => user ? navigate('/dashboard') : navigate('/signup?tier=Business')}
+                                className="w-full py-3 border border-white/20 text-white rounded-lg font-bold hover:bg-white/5 transition-colors uppercase text-sm"
+                            >
                                 Contact Sales
                             </button>
                         </div>
@@ -371,19 +411,19 @@ const Landing = () => {
                     <div>
                         <h4 className="text-white font-bold mb-6 uppercase text-xs tracking-widest">Resources</h4>
                         <ul className="space-y-3 text-silver text-sm">
-                            <li><a className="hover:text-[#de5c1b] cursor-pointer">Documentation</a></li>
-                            <li><a className="hover:text-[#de5c1b] cursor-pointer">API Reference</a></li>
-                            <li><a className="hover:text-[#de5c1b] cursor-pointer">Support Hub</a></li>
-                            <li><a className="hover:text-[#de5c1b] cursor-pointer">Case Studies</a></li>
+                            <li><a href="#" className="hover:text-[#de5c1b] cursor-pointer">Documentation</a></li>
+                            <li><a href="#" className="hover:text-[#de5c1b] cursor-pointer">API Reference</a></li>
+                            <li><a href="#" className="hover:text-[#de5c1b] cursor-pointer">Support Hub</a></li>
+                            <li><a href="#" className="hover:text-[#de5c1b] cursor-pointer">Case Studies</a></li>
                         </ul>
                     </div>
                     <div>
                         <h4 className="text-white font-bold mb-6 uppercase text-xs tracking-widest">Legal</h4>
                         <ul className="space-y-3 text-silver text-sm">
-                            <li><a className="hover:text-[#de5c1b] cursor-pointer">Privacy Policy</a></li>
-                            <li><a className="hover:text-[#de5c1b] cursor-pointer">Terms of Service</a></li>
-                            <li><a className="hover:text-[#de5c1b] cursor-pointer">Security</a></li>
-                            <li><a className="hover:text-[#de5c1b] cursor-pointer">Compliance</a></li>
+                            <li><a href="#" className="hover:text-[#de5c1b] cursor-pointer">Privacy Policy</a></li>
+                            <li><a href="#" className="hover:text-[#de5c1b] cursor-pointer">Terms of Service</a></li>
+                            <li><a href="#" className="hover:text-[#de5c1b] cursor-pointer">Security</a></li>
+                            <li><a href="#" className="hover:text-[#de5c1b] cursor-pointer">Compliance</a></li>
                         </ul>
                     </div>
                 </div>

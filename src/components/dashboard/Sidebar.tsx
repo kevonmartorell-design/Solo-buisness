@@ -4,25 +4,32 @@ import clsx from 'clsx';
 
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useBranding } from '../../contexts/BrandingContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Sidebar = () => {
     const { isSidebarOpen } = useSidebar();
     const { companyName, logoUrl } = useBranding();
+    const { user } = useAuth();
 
     // ... navItems definition ...
-    const navItems = [
-        { name: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
-        { name: 'Vault', path: '/vault', icon: 'lock' },
-        { name: 'Schedule', path: '/schedule', icon: 'calendar_today' },
-        { name: 'Employees', path: '/employees', icon: 'group' },
-        { name: 'Analytics', path: '/analytics', icon: 'bar_chart' },
-        { name: 'Clients', path: '/clients', icon: 'handshake' },
-        { name: 'Services & Products', path: '/services', icon: 'inventory_2' },
+    // ... navItems definition ...
+    const allNavItems = [
+        { name: 'Dashboard', path: '/dashboard', icon: 'dashboard', tiers: ['Free', 'Solo', 'Business'] },
+        { name: 'Vault', path: '/vault', icon: 'lock', tiers: ['Business'] },
+        { name: 'Schedule', path: '/schedule', icon: 'calendar_today', tiers: ['Solo', 'Business'] },
+        { name: 'Employees', path: '/employees', icon: 'group', tiers: ['Solo', 'Business'] },
+        { name: 'Analytics', path: '/analytics', icon: 'bar_chart', tiers: ['Solo', 'Business'] },
+        { name: 'Clients', path: '/clients', icon: 'handshake', tiers: ['Solo', 'Business'] },
+        { name: 'Services & Products', path: '/services', icon: 'inventory_2', tiers: ['Solo', 'Business'] },
 
-        { name: 'Profile', path: '/profile', icon: 'account_circle' },
-        { name: 'My Bookings', path: '/my-bookings', icon: 'event_available' },
-        { name: 'Settings', path: '/settings', icon: 'settings' },
+        { name: 'Profile', path: '/profile', icon: 'account_circle', tiers: ['Free', 'Solo', 'Business'] },
+        { name: 'My Bookings', path: '/my-bookings', icon: 'event_available', tiers: ['Free', 'Solo', 'Business'] },
+        { name: 'Settings', path: '/settings', icon: 'settings', tiers: ['Free', 'Solo', 'Business'] },
     ];
+
+    // Filter items based on user's tier
+    const userTier = user?.tier || 'Free';
+    const navItems = allNavItems.filter(item => item.tiers.includes(userTier));
 
     return (
         <aside className={`fixed left-0 top-0 h-full w-72 bg-[#1c1917] border-r border-white/5 flex flex-col shadow-2xl z-50 transition-transform duration-300 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>

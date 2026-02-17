@@ -53,12 +53,15 @@ const Overview = () => {
                     .eq('id', user.id)
                     .single();
 
-                if (!profile?.organization_id) {
+                // Explicit check to handle potential null/never type inference issues
+                const userProfile = profile as { organization_id: string } | null;
+
+                if (!userProfile?.organization_id) {
                     setLoading(false);
                     return;
                 }
 
-                const orgId = profile.organization_id;
+                const orgId = userProfile.organization_id;
 
                 // 1. Fetch Bookings with Service details for Revenue
                 const { data: bookingsData } = await supabase
@@ -117,20 +120,22 @@ const Overview = () => {
 
 
                 // 3. Fetch Recent Activity (Audit Logs)
-                const { data: auditLogs } = await supabase
+                const { data: auditLogsData } = await supabase
                     .from('audit_logs')
                     .select('*')
                     .eq('organization_id', orgId)
                     .order('created_at', { ascending: false })
                     .limit(5);
 
-                const formattedActivity = auditLogs?.map(log => ({
+                const auditLogs = auditLogsData as any[] || [];
+
+                const formattedActivity = auditLogs.map(log => ({
                     id: log.id,
                     type: 'system',
                     content: `${log.action} ${log.entity_type}`,
                     time: formatTimeAgo(log.created_at),
                     user: 'System'
-                })) || [];
+                }));
 
                 setStats({
                     revenue: totalRevenue,
@@ -168,7 +173,7 @@ const Overview = () => {
             >
                 <div>
                     <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Command Center</h1>
-                    <p className="text-white/40 text-sm font-medium tracking-wider">BUSINESS EDITION</p>
+                    <p className="text-white/40 text-sm font-medium tracking-wider">{user?.tier === 'Solo' ? 'SOLO EDITION' : 'BUSINESS EDITION'}</p>
                 </div>
                 <p className="text-white/40 text-sm">System Status: <span className="text-[#de5c1b] font-bold">OPTIMAL</span></p>
             </motion.div>

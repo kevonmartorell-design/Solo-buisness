@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useBranding } from '../../contexts/BrandingContext';
 import { supabase } from '../../lib/supabase';
 
@@ -8,6 +8,9 @@ const Signup = () => {
     const { companyName, logoUrl } = useBranding();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const [searchParams] = useSearchParams();
+    const tier = searchParams.get('tier') || 'Free'; // Default to Free if not specified, though usually links will specify
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -26,6 +29,7 @@ const Signup = () => {
                 options: {
                     data: {
                         full_name: fullName,
+                        tier: tier, // Pass tier to metadata
                     },
                 },
             });
@@ -33,9 +37,13 @@ const Signup = () => {
             if (error) throw error;
 
             if (data.user) {
-                // Determine where to go next. Usually onboarding if not completed.
-                // We'll send them to onboarding by default for new signups.
-                navigate('/onboarding');
+                // If tier is Free (Client), skip onboarding and go straight to dashboard
+                // For Solo and Business, go to onboarding to set up company
+                if (tier === 'Free') {
+                    navigate('/dashboard');
+                } else {
+                    navigate('/onboarding');
+                }
             }
         } catch (err: any) {
             console.error('Signup error:', err);

@@ -5,7 +5,7 @@ import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/ProtectedRoute';
-import Overview from './pages/dashboard/Overview';
+import DashboardHome from './pages/dashboard/DashboardHome';
 import Employees from './pages/dashboard/Employees';
 import Vault from './pages/dashboard/Vault';
 
@@ -41,15 +41,44 @@ function App() {
                   <Route path="/onboarding" element={<Onboarding />} />
 
                   <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                    <Route path="/dashboard" element={<Overview />} />
-                    <Route path="/vault" element={<Vault />} />
-                    <Route path="/schedule" element={<Schedule />} />
-                    <Route path="/employees" element={<Employees />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/clients" element={<Clients />} />
-                    <Route path="/services" element={<Services />} />
-                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/dashboard" element={<DashboardHome />} />
 
+                    {/* Business Only */}
+                    <Route path="/vault" element={
+                      <ProtectedRoute allowedTiers={['Business']}>
+                        <Vault />
+                      </ProtectedRoute>
+                    } />
+
+                    {/* Solo & Business */}
+                    <Route path="/schedule" element={
+                      <ProtectedRoute allowedTiers={['Solo', 'Business']}>
+                        <Schedule />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/employees" element={
+                      <ProtectedRoute allowedTiers={['Solo', 'Business']}>
+                        <Employees />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/analytics" element={
+                      <ProtectedRoute allowedTiers={['Solo', 'Business']}>
+                        <Analytics />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/clients" element={
+                      <ProtectedRoute allowedTiers={['Solo', 'Business']}>
+                        <Clients />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/services" element={
+                      <ProtectedRoute allowedTiers={['Solo', 'Business']}>
+                        <Services />
+                      </ProtectedRoute>
+                    } />
+
+                    {/* Shared Access (Free, Solo, Business) */}
+                    <Route path="/profile" element={<Profile />} />
                     <Route path="/my-bookings" element={<MyBookings />} />
                     <Route path="/settings" element={<Settings />} />
                   </Route>
