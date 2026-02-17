@@ -35,6 +35,8 @@ import { useAuth } from '../../contexts/AuthContext';
 
 // ... (imports remain)
 
+import AddEmployeeModal from '../../components/dashboard/employees/AddEmployeeModal';
+
 const Employees = () => {
     const { user } = useAuth();
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -42,57 +44,58 @@ const Employees = () => {
     const [filterRole, setFilterRole] = useState('All');
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showAddModal, setShowAddModal] = useState(false);
+
+    const fetchEmployees = async () => {
+        if (!user) return;
+        try {
+            // Get Org ID
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('organization_id')
+                .eq('id', user.id)
+                .single();
+
+            if (!profile?.organization_id) {
+                setLoading(false);
+                return;
+            }
+            const orgId = profile.organization_id;
+
+            const { data: profiles, error } = await supabase
+                .from('profiles')
+                .select('id, name, role, department, email, phone, avatar_url, created_at')
+                .eq('organization_id', orgId);
+
+            if (error) throw error;
+
+            if (profiles) {
+                const mappedEmployees: Employee[] = profiles.map((p: any) => ({
+                    id: p.id,
+                    name: p.name || 'Unknown User',
+                    role: p.role || 'Team Member',
+                    department: p.department || 'Field Ops', // specific types might mismatch, casting for now
+                    status: 'active', // Default
+                    clockStatus: 'clocked-out', // Default
+                    efficiency: 100, // Placeholder
+                    email: p.email || 'N/A',
+                    phone: p.phone || 'N/A',
+                    location: 'Field', // Placeholder
+                    certifications: [], // Placeholder
+                    imgUrl: p.avatar_url || 'https://via.placeholder.com/150',
+                    joinDate: new Date(p.created_at).toLocaleDateString()
+                }));
+                setEmployees(mappedEmployees);
+            }
+        } catch (error) {
+            console.error('Error fetching employees:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Fetch Employees
     useEffect(() => {
-        const fetchEmployees = async () => {
-            if (!user) return;
-            try {
-                // Get Org ID
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('organization_id')
-                    .eq('id', user.id)
-                    .single();
-
-                if (!profile?.organization_id) {
-                    setLoading(false);
-                    return;
-                }
-                const orgId = profile.organization_id;
-
-                const { data: profiles, error } = await supabase
-                    .from('profiles')
-                    .select('id, name, role, department, email, phone, avatar_url, created_at')
-                    .eq('organization_id', orgId);
-
-                if (error) throw error;
-
-                if (profiles) {
-                    const mappedEmployees: Employee[] = profiles.map((p: any) => ({
-                        id: p.id,
-                        name: p.name || 'Unknown User',
-                        role: p.role || 'Team Member',
-                        department: p.department || 'Field Ops', // specific types might mismatch, casting for now
-                        status: 'active', // Default
-                        clockStatus: 'clocked-out', // Default
-                        efficiency: 100, // Placeholder
-                        email: p.email || 'N/A',
-                        phone: p.phone || 'N/A',
-                        location: 'Field', // Placeholder
-                        certifications: [], // Placeholder
-                        imgUrl: p.avatar_url || 'https://via.placeholder.com/150',
-                        joinDate: new Date(p.created_at).toLocaleDateString()
-                    }));
-                    setEmployees(mappedEmployees);
-                }
-            } catch (error) {
-                console.error('Error fetching employees:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchEmployees();
     }, [user]);
 
@@ -130,7 +133,10 @@ const Employees = () => {
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Team Command Center</h1>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">Manage your workforce, track performance, and monitor active status.</p>
                 </div>
-                <button className="bg-[#de5c1b] hover:bg-[#c94e10] text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors shadow-lg shadow-[#de5c1b]/20">
+                <button
+                    onClick={() => setShowAddModal(true)}
+                    className="bg-[#de5c1b] hover:bg-[#c94e10] text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors shadow-lg shadow-[#de5c1b]/20"
+                >
                     <Plus className="w-4 h-4" />
                     Add Talent
                 </button>
@@ -244,6 +250,15 @@ const Employees = () => {
                     </table>
                 </div>
             )}
+
+            <AddEmployeeModal
+                isOpen={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                onSuccess={() => {
+                    fetchEmployees();
+                    setShowAddModal(false);
+                }}
+            />
         </div>
     );
 };
