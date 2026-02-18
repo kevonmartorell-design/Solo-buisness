@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../types/supabase';
-import { Calendar, Clock, Check, ChevronLeft, Loader2, MapPin, Globe, User, Mail, Phone } from 'lucide-react';
+import { Calendar, Clock, Check, ChevronLeft, Loader2, MapPin, Globe, User, Mail, Phone, Star, Instagram, Facebook, Linkedin } from 'lucide-react';
 import { format } from 'date-fns';
 
 type Organization = {
@@ -19,6 +19,15 @@ type Service = {
     duration: number;
     price: number;
     description: string;
+    image_url?: string | null;
+};
+
+type Review = {
+    id: string;
+    rating: number;
+    comment: string;
+    testimonial_text?: string;
+    created_at: string;
 };
 
 const PublicBooking = () => {
@@ -26,6 +35,7 @@ const PublicBooking = () => {
     const [loading, setLoading] = useState(true);
     const [org, setOrg] = useState<Organization | null>(null);
     const [services, setServices] = useState<Service[]>([]);
+    const [reviews, setReviews] = useState<Review[]>([]);
 
     // Booking State
     const [step, setStep] = useState(1);
@@ -57,16 +67,31 @@ const PublicBooking = () => {
                     .single();
 
                 if (orgError) throw orgError;
-                setOrg(orgData);
+                const orgTyped = orgData as unknown as Organization;
+                setOrg(orgTyped);
 
                 // 2. Fetch Services
                 const { data: servicesData, error: servicesError } = await supabase
                     .from('services')
                     .select('*')
-                    .eq('organization_id', orgData.id);
+                    .eq('organization_id', orgTyped.id);
 
                 if (servicesError) throw servicesError;
                 setServices(servicesData || []);
+
+                // 3. Fetch Reviews (Top rated, public)
+                const { data: reviewsData, error: reviewsError } = await supabase
+                    .from('ratings_reviews')
+                    .select('*')
+                    .eq('organization_id', orgTyped.id)
+                    .gte('rating', 4) // Only 4 or 5 stars
+                    .eq('is_public', true)
+                    .order('created_at', { ascending: false })
+                    .limit(4);
+
+                if (!reviewsError) {
+                    setReviews(reviewsData || []);
+                }
 
             } catch (err) {
                 console.error("Error fetching booking data:", err);
@@ -134,7 +159,7 @@ const PublicBooking = () => {
             const bookingDateTime = new Date(selectedDate);
             bookingDateTime.setHours(hours, minutes, 0, 0);
 
-            const { error: bookingError } = await (supabase as any)
+            const { data: bookingData, error: bookingError } = await (supabase as any)
                 .from('bookings')
                 .insert({
                     organization_id: org.id,
@@ -143,9 +168,21 @@ const PublicBooking = () => {
                     booking_datetime: bookingDateTime.toISOString(),
                     status: 'requested', // Public bookings start as requested
                     notes: `Public Booking\nName: ${clientDetails.name}\nEmail: ${clientDetails.email}\nNotes: ${clientDetails.notes}`
-                });
+                })
+                .select()
+                .single();
 
             if (bookingError) throw bookingError;
+
+            // Trigger Email Notification (Edge Function)
+            // Fire and forget - don't block success message
+            if (bookingData?.id) {
+                supabase.functions.invoke('send-booking-notification', {
+                    body: { booking_id: bookingData.id }
+                }).then(({ error: funcError }) => {
+                    if (funcError) console.warn('Notification failed:', funcError);
+                });
+            }
 
             setSuccess(true);
             setStep(4);
@@ -209,7 +246,82 @@ const PublicBooking = () => {
                         <span className="flex items-center gap-1"><Globe className="w-4 h-4" /> {org.settings.website}</span>
                     )}
                 </div>
+
+                {/* Bio & Socials */}
+                {(org.settings?.bio || org.settings?.socials) && (
+                    <div className="mt-6 max-w-2xl mx-auto text-center animate-fade-in">
+                        {org.settings?.bio && (
+                            <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-4">
+                                {org.settings.bio}
+                            </p>
+                        )}
+                        {org.settings?.socials && (
+                            <div className="flex justify-center gap-4">
+                                {org.settings.socials.instagram && (
+                                    <a href={org.settings.socials.instagram} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#de5c1b] transition-colors">
+                                        <Instagram className="w-5 h-5" />
+                                    </a>
+                                )}
+                                {org.settings.socials.facebook && (
+                                    <a href={org.settings.socials.facebook} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#de5c1b] transition-colors">
+                                        <Facebook className="w-5 h-5" />
+                                    </a>
+                                )}
+                                {org.settings.socials.linkedin && (
+                                    <a href={org.settings.socials.linkedin} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#de5c1b] transition-colors">
+                                        <Linkedin className="w-5 h-5" />
+                                    </a>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
+
+            {/* Portfolio / Gallery (From Services) */}
+            {services.some(s => s.image_url) && (
+                <div className="mb-8 animate-fade-in">
+                    <h3 className="text-center text-xs font-bold text-[#de5c1b] uppercase tracking-widest mb-4">Our Work</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {services.filter(s => s.image_url).map((service) => (
+                            <div key={service.id} className="relative group overflow-hidden rounded-xl aspect-square shadow-sm border border-slate-100 dark:border-white/5 bg-slate-100 dark:bg-white/5">
+                                <img
+                                    src={service.image_url || ''}
+                                    alt={service.name}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                                    <span className="text-white text-xs font-bold truncate">{service.name}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Trusted Reviews Section */}
+            {reviews.length > 0 && (
+                <div className="mb-8 animate-fade-in">
+                    <h3 className="text-center text-xs font-bold text-[#de5c1b] uppercase tracking-widest mb-4">Trusted Reviews</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {reviews.map((review) => (
+                            <div key={review.id} className="bg-white dark:bg-[#211611] p-4 rounded-xl shadow-sm border border-slate-100 dark:border-white/5">
+                                <div className="flex text-[#de5c1b] mb-2">
+                                    {[...Array(review.rating)].map((_, i) => (
+                                        <Star key={i} className="w-4 h-4 fill-current" />
+                                    ))}
+                                </div>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 italic mb-2">"{review.comment}"</p>
+                                {review.testimonial_text && (
+                                    <p className="text-xs text-slate-400 border-t border-slate-100 dark:border-white/5 pt-2 mt-2">
+                                        "{review.testimonial_text}"
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Progress Steps */}
             <div className="flex items-center justify-center mb-8 gap-2">

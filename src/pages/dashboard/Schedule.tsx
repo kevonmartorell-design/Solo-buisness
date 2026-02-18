@@ -78,11 +78,12 @@ const Schedule = () => {
                     .eq('id', user.id)
                     .single();
 
-                if (!profile?.organization_id) {
+                const profileData = profile as any;
+                if (!profileData?.organization_id) {
                     setLoading(false);
                     return;
                 }
-                const organizationId = profile.organization_id;
+                const organizationId = profileData.organization_id;
                 setOrgId(organizationId);
 
                 // 1. Fetch Resources (Profiles in the same Org)
@@ -152,7 +153,42 @@ const Schedule = () => {
         };
 
         fetchScheduleData();
-    }, [user, selectedDate]); // Refetch when selectedDate changes if we want to filter query server-side later
+
+        // --- Realtime Subscription ---
+        const channel = supabase
+            .channel('public:bookings')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'bookings',
+                    filter: `organization_id=eq.${orgId || (user as any)?.user_metadata?.organization_id}` // Filter by Org if possible, but orgId might be null initially. 
+                    // Best practice: Filter by org_id in RLS, but for realtime we filter payload if possible or just refetch.
+                    // Since Row Level Security (RLS) is on, specific filtering in the channel definition 
+                    // acts as an additional layer but the client only receives what it's allowed to see if "broadcast" is not used.
+                    // However, for "postgres_changes", we receive events.
+                    // Let's just listen to all changes and filter in callback or just refetch. Refetch is safer for consistency.
+                },
+                (payload) => {
+                    // console.log('Realtime update:', payload);
+                    if (payload.eventType === 'INSERT') {
+                        showFeedback('New booking received!', 'success');
+                        fetchScheduleData();
+                    } else if (payload.eventType === 'UPDATE') {
+                        // showFeedback('Schedule updated'); // Optional, might be noisy if self-triggered
+                        fetchScheduleData();
+                    } else if (payload.eventType === 'DELETE') {
+                        fetchScheduleData();
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user, selectedDate, orgId]); // Add orgId dependency
 
     // --- Conflict Detection ---
     const checkForConflicts = (resourceId: string | undefined, startTime: string, endTime: string, date: Date, excludeEventId?: string) => {

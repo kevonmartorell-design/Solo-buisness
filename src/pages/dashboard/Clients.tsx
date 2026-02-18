@@ -62,46 +62,91 @@ const Clients = () => {
 
             try {
                 // Get Org ID
-                const { data: profile } = await supabase
+                const { data: profile, error: profileError } = await supabase
                     .from('profiles')
                     .select('organization_id')
                     .eq('id', user.id)
                     .single();
 
-                if (!profile?.organization_id) {
+                if (profileError) {
+                    console.error('Error fetching profile:', profileError);
                     setLoading(false);
                     return;
                 }
-                const orgId = profile.organization_id;
 
+                // Explicitly cast or handle the type safely
+                const profileData = profile as any;
+                if (!profileData?.organization_id) {
+                    setLoading(false);
+                    return;
+                }
+                const orgId = profileData.organization_id;
+
+                // Fetch Clients with Bookings
                 const { data: clientData, error } = await supabase
                     .from('clients')
-                    .select('id, name, email, phone, status, created_at')
+                    .select(`
+                        id, 
+                        name, 
+                        email, 
+                        phone, 
+                        status, 
+                        created_at,
+                        bookings (
+                            id,
+                            booking_datetime,
+                            service:services (price)
+                        )
+                    `)
                     .eq('organization_id', orgId);
 
                 if (error) throw error;
 
-                const mappedClients: Client[] = clientData.map((c: any) => ({
-                    id: c.id,
-                    name: c.name || 'Unknown Client',
-                    initials: c.name ? c.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : '??',
-                    contactInfo: {
-                        email: c.email || 'N/A',
-                        phone: c.phone || 'N/A'
-                    },
-                    status: c.status || 'Active', // Default if null
-                    loyaltyTier: 'New', // Default
-                    avatarColor: 'bg-emerald-100 text-emerald-600', // Default
-                    stats: {
-                        totalSpend: 0, // Placeholder
-                        visitCount: 0,
-                        lastVisit: new Date().toISOString() // Placeholder
-                    },
-                    aiInsights: [], // Placeholder
-                    privateNotes: '', // Placeholder
-                    preferences: { likes: [], dislikes: [] }, // Placeholder
-                    history: [] // Placeholder
-                }));
+                const mappedClients: Client[] = clientData.map((c: any) => {
+                    // Calculate Stats
+                    const bookings = c.bookings || [];
+                    const visitCount = bookings.length;
+                    const totalSpend = bookings.reduce((sum: number, b: any) => sum + (b.service?.price || 0), 0);
+
+                    // Find last visit
+                    const sortedBookings = [...bookings].sort((a: any, b: any) =>
+                        new Date(b.booking_datetime).getTime() - new Date(a.booking_datetime).getTime()
+                    );
+                    const lastVisit = sortedBookings.length > 0 ? sortedBookings[0].booking_datetime : c.created_at;
+
+                    // Determine Loyalty Tier (Simple Logic)
+                    let loyaltyTier = 'New';
+                    if (visitCount > 10 || totalSpend > 1000) loyaltyTier = 'VIP';
+                    else if (visitCount > 3) loyaltyTier = 'Regular';
+
+                    return {
+                        id: c.id,
+                        name: c.name || 'Unknown Client',
+                        initials: c.name ? c.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : '??',
+                        contactInfo: {
+                            email: c.email || 'N/A',
+                            phone: c.phone || 'N/A'
+                        },
+                        status: c.status || 'Active',
+                        loyaltyTier,
+                        avatarColor: 'bg-emerald-100 text-emerald-600',
+                        stats: {
+                            totalSpend,
+                            visitCount,
+                            lastVisit
+                        },
+                        aiInsights: [],
+                        privateNotes: '',
+                        preferences: { likes: [], dislikes: [] },
+                        history: sortedBookings.map((b: any) => ({
+                            id: b.id,
+                            date: b.booking_datetime,
+                            serviceName: b.service?.name || 'Service',
+                            price: b.service?.price || 0,
+                            technician: 'Staff' // Placeholder
+                        }))
+                    };
+                });
 
                 setClients(mappedClients);
 

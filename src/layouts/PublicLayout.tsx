@@ -11,7 +11,7 @@ const PublicLayout = () => {
                     <div className="bg-[#de5c1b] w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xl">
                         W
                     </div>
-                    <span className="font-bold text-lg text-slate-900 dark:text-white tracking-tight">WorkForce</span>
+                    <span className="font-bold text-lg text-slate-900 dark:text-white tracking-tight">AEGIS CERT</span>
                 </div>
                 {/* Optional: Login Link for existing users */}
                 <a href="/login" className="text-sm font-bold text-[#de5c1b] hover:text-[#de5c1b]/80 transition-colors">

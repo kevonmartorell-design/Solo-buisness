@@ -5,6 +5,7 @@ import {
     Type, Briefcase, Plus, Trash2, Globe, Smartphone, Server, FileText,
     Users, Download, ToggleRight, Power
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBranding } from '../../contexts/BrandingContext';
 import { useVault } from '../../contexts/VaultContext';
@@ -39,6 +40,39 @@ const Settings = () => {
                 icon: 'Folder' // Default icon
             });
             setNewCatName('');
+        }
+    };
+
+    const handleTierChange = async (newTier: 'Free' | 'Solo' | 'Business') => {
+        if (!user) return;
+        const confirmMessage = `Are you sure you want to switch to the ${newTier} plan?`;
+
+        if (window.confirm(confirmMessage)) {
+            try {
+                const { data: { user: currentUser } } = await supabase.auth.getUser();
+                if (!currentUser) return;
+
+                const { data: profile } = await (supabase as any)
+                    .from('profiles')
+                    .select('organization_id')
+                    .eq('id', currentUser.id)
+                    .single();
+
+                if (profile?.organization_id) {
+                    const { error } = await (supabase as any)
+                        .from('organizations')
+                        .update({ tier: newTier.toLowerCase() })
+                        .eq('id', profile.organization_id);
+
+                    if (error) throw error;
+
+                    updateTier(newTier);
+                    alert(`Successfully switched to ${newTier} plan!`);
+                }
+            } catch (err) {
+                console.error('Error updating tier:', err);
+                alert('Failed to update tier. Please try again.');
+            }
         }
     };
     return (
@@ -97,6 +131,66 @@ const Settings = () => {
                             <div className="relative w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full">
                                 <div className="absolute top-0 left-0 h-full bg-[#de5c1b] rounded-full" style={{ width: '75%' }}></div>
                                 <div className="absolute top-1/2 -translate-y-1/2 left-[75%] h-4 w-4 bg-white rounded-full border-2 border-[#de5c1b] shadow-lg cursor-pointer"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Section: Subscription & Billing */}
+                <section className="mt-8">
+                    <h2 className="px-6 text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em] mb-2">Subscription & Billing</h2>
+                    <div className="bg-white/5 dark:bg-white/5 mx-4 rounded-xl overflow-hidden border border-white/10 dark:border-white/10 border-gray-200">
+                        <div className="p-4 bg-white dark:bg-transparent">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <p className="text-sm font-bold text-gray-700 dark:text-gray-200">Current Plan</p>
+                                    <p className="text-xs text-gray-500">Manage your subscription tier</p>
+                                </div>
+                                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${user?.tier === 'Business' ? 'bg-[#de5c1b]/20 text-[#de5c1b]' :
+                                    user?.tier === 'Solo' ? 'bg-blue-500/20 text-blue-500' :
+                                        'bg-gray-500/20 text-gray-500'
+                                    }`}>
+                                    {user?.tier || 'Free'}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3">
+                                {[
+                                    {
+                                        name: 'Free',
+                                        price: '$0',
+                                        description: 'Client Access',
+                                        features: ['Browse Profiles', 'Request Bookings']
+                                    },
+                                    {
+                                        name: 'Solo',
+                                        price: '$40',
+                                        description: '1-10 Employees',
+                                        features: ['Schedule', 'Basic Analytics', 'Client CRM']
+                                    },
+                                    {
+                                        name: 'Business',
+                                        price: '$70',
+                                        description: 'Up to 30 Employees',
+                                        features: ['Full Branding', 'Adv. Analytics', 'Priority Support']
+                                    }
+                                ].map((plan) => (
+                                    <button
+                                        key={plan.name}
+                                        onClick={() => handleTierChange(plan.name as any)}
+                                        disabled={user?.tier === plan.name}
+                                        className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${user?.tier === plan.name
+                                            ? 'border-[#de5c1b] bg-[#de5c1b]/5 cursor-default'
+                                            : 'border-transparent bg-slate-50 dark:bg-white/5 hover:border-gray-300 dark:hover:border-white/20'
+                                            }`}
+                                    >
+                                        <span className={`text-xs font-bold ${user?.tier === plan.name ? 'text-[#de5c1b]' : 'text-gray-500'}`}>
+                                            {plan.name}
+                                        </span>
+                                        <span className="text-xl font-bold">{plan.price}<span className="text-[10px] font-normal text-gray-400">/mo</span></span>
+                                        <span className="text-[10px] text-gray-500 font-medium">{plan.description}</span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>

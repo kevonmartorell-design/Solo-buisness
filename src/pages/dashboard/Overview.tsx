@@ -33,8 +33,10 @@ const Overview = () => {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         revenue: 0,
+        expenses: 0,
+        netProfit: 0,
         activeCount: 0,
-        efficiency: 100, // We will repurpose this or ignore, using specific fields below
+        efficiency: 100,
         recentActivity: [] as any[],
         dailyRevenue: [] as any[],
         bestClient: '',
@@ -129,6 +131,15 @@ const Overview = () => {
 
                 const auditLogs = auditLogsData as any[] || [];
 
+                // 4. Fetch Expenses for Net Profit
+                const { data: expensesData } = await (supabase as any)
+                    .from('expenses')
+                    .select('amount')
+                    .eq('organization_id', orgId);
+
+                const totalExpenses = (expensesData || []).reduce((sum: number, exp: any) => sum + (Number(exp.amount) || 0), 0);
+                const netProfit = totalRevenue - totalExpenses;
+
                 const formattedActivity = auditLogs.map(log => ({
                     id: log.id,
                     type: 'system',
@@ -139,10 +150,12 @@ const Overview = () => {
 
                 setStats({
                     revenue: totalRevenue,
-                    activeCount: totalBookings, // Showing Total Bookings instead of just count
-                    efficiency: retentionRate, // Using Efficiency card for Retention Rate for now, or update the card title
+                    expenses: totalExpenses,
+                    netProfit: netProfit,
+                    activeCount: totalBookings,
+                    efficiency: retentionRate,
                     recentActivity: formattedActivity,
-                    dailyRevenue: [], // Still empty for now
+                    dailyRevenue: [],
                     bestClient: bestClient ? `${bestClient.name} ($${bestClient.spend})` : 'No clients yet',
                     retention: `${retentionRate}%`
                 });
@@ -205,11 +218,11 @@ const Overview = () => {
                     delay={0.3}
                 />
                 <MetricCard
-                    title="Retention Rate"
-                    value={stats.retention || '0%'}
-                    trend="Returning"
-                    trendUp={true}
-                    icon="repeat"
+                    title="Net Profit"
+                    value={`$${stats.netProfit.toLocaleString()}`}
+                    trend="Revenue - Expenses"
+                    trendUp={stats.netProfit >= 0}
+                    icon="savings"
                     delay={0.4}
                 />
             </div>

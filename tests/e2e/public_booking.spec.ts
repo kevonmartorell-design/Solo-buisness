@@ -15,7 +15,7 @@ test.describe('Public Booking Flow', () => {
         const page = await context.newPage();
 
         // Login using Fast Track to ensure account exists and has Org
-        await page.goto('http://localhost:5173/login');
+        await page.goto('http://localhost:3000/login');
         // Click the fast track button
         await page.click('button:has-text("Fast Track")');
 
@@ -23,7 +23,7 @@ test.describe('Public Booking Flow', () => {
         await page.waitForURL('**/dashboard');
 
         // 1. Create a Service (ensure one exists)
-        await page.goto('http://localhost:5173/services');
+        await page.goto('http://localhost:3000/services');
         // Open Add Modal (floating button)
         await page.click('button.fixed.right-6');
 
@@ -37,7 +37,7 @@ test.describe('Public Booking Flow', () => {
         await page.waitForSelector('h3:has-text("Consultation")');
 
         // Navigate to profile to see the link and get Org ID
-        await page.goto('http://localhost:5173/profile');
+        await page.goto('http://localhost:3000/profile');
 
         // Wait for the booking link to appear
         const linkLocator = page.locator('p[data-org-id]');
@@ -53,7 +53,7 @@ test.describe('Public Booking Flow', () => {
     test('Public client can book a service', async ({ page }) => {
         // 1. Visit Public Booking Page
         expect(orgId).toBeDefined();
-        await page.goto(`http://localhost:5173/booking/${orgId}`);
+        await page.goto(`http://localhost:3000/booking/${orgId}`);
 
         // 2. Select Service
         // Wait for services to load

@@ -18,6 +18,7 @@ import Services from './pages/dashboard/Services';
 import Profile from './pages/dashboard/Profile';
 import MyBookings from './pages/dashboard/MyBookings';
 import Settings from './pages/dashboard/Settings';
+import Financials from './pages/dashboard/Financials';
 
 import PublicBooking from './pages/public/PublicBooking';
 import PublicReview from './pages/public/PublicReview';
@@ -86,6 +87,11 @@ function App() {
                     <Route path="/services" element={
                       <ProtectedRoute allowedTiers={['Solo', 'Business']}>
                         <Services />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/financials" element={
+                      <ProtectedRoute allowedTiers={['Solo', 'Business']}>
+                        <Financials />
                       </ProtectedRoute>
                     } />
 

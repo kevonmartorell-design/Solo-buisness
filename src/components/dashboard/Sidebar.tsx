@@ -19,6 +19,7 @@ const Sidebar = () => {
         { name: 'Schedule', path: '/schedule', icon: 'calendar_today', tiers: ['Solo', 'Business'] },
         { name: 'Employees', path: '/employees', icon: 'group', tiers: ['Solo', 'Business'] },
         { name: 'Analytics', path: '/analytics', icon: 'bar_chart', tiers: ['Solo', 'Business'] },
+        { name: 'Financials', path: '/financials', icon: 'payments', tiers: ['Solo', 'Business'] },
         { name: 'Clients', path: '/clients', icon: 'handshake', tiers: ['Solo', 'Business'] },
         { name: 'Services & Products', path: '/services', icon: 'inventory_2', tiers: ['Solo', 'Business'] },
 
