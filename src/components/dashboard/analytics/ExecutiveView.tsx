@@ -40,7 +40,7 @@ const ExecutiveView = () => {
 
             try {
                 // 1. Get Org ID
-                const { data: profile } = await supabase
+                const { data: profile } = await (supabase as any)
                     .from('profiles')
                     .select('organization_id')
                     .eq('id', user.id)
@@ -62,7 +62,7 @@ const ExecutiveView = () => {
                         service:services(price),
                         employee:profiles(department)
                     `)
-                    .eq('organization_id', profile.organization_id)
+                    .eq('organization_id', (profile as any).organization_id)
                     .neq('status', 'cancelled');
 
                 if (bookings && bookings.length > 0) {
@@ -99,9 +99,8 @@ const ExecutiveView = () => {
                     }));
                     setDeptPerformance(deptData);
 
-                    // Forecast (Mock based on current rev)
                     // If rev is 0, forecast is 0. If rev > 0, project growth.
-                    const projectionBase = totalRevenue > 0 ? totalRevenue : 10000; // Fallback for demo if 0? No, let's show 0 if 0.
+                    // (projectionBase logic moved to inline if needed)
 
                     if (totalRevenue === 0) {
                         setForecastData([]);
@@ -151,7 +150,7 @@ const ExecutiveView = () => {
                 <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-6">Revenue Forecast (Next Quarter)</h3>
                 <div className="h-80">
                     {forecastData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <ResponsiveContainer width="100%" height="100%">
                             <ComposedChart data={forecastData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
                                 <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
@@ -176,7 +175,7 @@ const ExecutiveView = () => {
                 <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-6">Department Performance Comparison</h3>
                 <div className="h-80">
                     {deptPerformance.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={deptPerformance}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
                                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />

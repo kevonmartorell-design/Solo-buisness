@@ -37,7 +37,6 @@ const PersonalView = () => {
     const [serviceData, setServiceData] = useState<any[]>([]);
     const [topClients, setTopClients] = useState<any[]>([]);
     const [heatmapData, setHeatmapData] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchPersonalMetrics = async () => {
@@ -45,14 +44,13 @@ const PersonalView = () => {
 
             try {
                 // Get Org ID
-                const { data: profile } = await supabase
+                const { data: profile } = await (supabase as any)
                     .from('profiles')
                     .select('organization_id')
                     .eq('id', user.id)
                     .single();
 
                 if (!profile?.organization_id) {
-                    setLoading(false);
                     return;
                 }
                 const orgId = profile.organization_id;
@@ -182,10 +180,11 @@ const PersonalView = () => {
                 }));
                 setTopClients(topList);
 
+                // setStats(...)
             } catch (error) {
                 console.error('Error fetching analytics:', error);
             } finally {
-                setLoading(false);
+                // Done
             }
         };
 
@@ -207,7 +206,7 @@ const PersonalView = () => {
                 <div className="bg-white dark:bg-[#1c1917] p-6 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
                     <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-6">Booking & Revenue Growth</h3>
                     <div className="h-80">
-                        <ResponsiveContainer width="100%" height={320} minWidth={0}>
+                        <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={monthlyData}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -229,7 +228,7 @@ const PersonalView = () => {
                 <div className="bg-white dark:bg-[#1c1917] p-6 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
                     <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-6">Revenue by Service</h3>
                     <div className="h-80">
-                        <ResponsiveContainer width="100%" height={320} minWidth={0}>
+                        <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
                                     data={serviceData}
@@ -256,7 +255,7 @@ const PersonalView = () => {
             <div className="bg-white dark:bg-[#1c1917] p-6 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-6">Booking Density (Days)</h3>
                 <div className="h-80">
-                    <ResponsiveContainer width="100%" height={320} minWidth={0}>
+                    <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={heatmapData}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
                             <XAxis dataKey="day" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />

@@ -19,6 +19,7 @@ const Financials = () => {
 
     // Payroll State
     const [employees, setEmployees] = useState<any[]>([]);
+    const [assignments, setAssignments] = useState<any[]>([]);
     const [payrollPeriod, setPayrollPeriod] = useState({
         start: new Date(new Date().setDate(new Date().getDate() - 14)).toISOString().split('T')[0],
         end: new Date().toISOString().split('T')[0]
@@ -27,7 +28,7 @@ const Financials = () => {
 
     useEffect(() => {
         fetchFinancialData();
-    }, [user]);
+    }, [user, payrollPeriod]);
 
     const fetchFinancialData = async () => {
         if (!user) return;
@@ -40,11 +41,13 @@ const Financials = () => {
                 .single();
 
             if (profile?.organization_id) {
+                const orgId = profile.organization_id;
+
                 // Fetch Expenses
                 const { data: expenseData } = await (supabase as any)
                     .from('expenses')
                     .select('*')
-                    .eq('organization_id', profile.organization_id)
+                    .eq('organization_id', orgId)
                     .order('date', { ascending: false });
                 setExpenses(expenseData || []);
 
@@ -52,24 +55,37 @@ const Financials = () => {
                 const { data: bookings } = await (supabase as any)
                     .from('bookings')
                     .select('service:services(price)')
-                    .eq('organization_id', profile.organization_id)
+                    .eq('organization_id', orgId)
                     .eq('status', 'completed');
 
                 const totalRevenue = bookings?.reduce((sum: number, b: any) => sum + (Number(b.service?.price) || 0), 0) || 0;
                 setRevenue(totalRevenue);
 
-                // Fetch Employees for Payroll
+                // Fetch Employees
                 const { data: emps } = await (supabase as any)
                     .from('profiles')
                     .select('*')
-                    .eq('organization_id', profile.organization_id);
+                    .eq('organization_id', orgId);
                 setEmployees(emps || []);
+
+                // Fetch Assignments + Shifts for Payroll
+                const { data: assignData } = await (supabase as any)
+                    .from('assignments')
+                    .select(`
+                        *,
+                        shift:shifts (*)
+                    `)
+                    .eq('organization_id', orgId)
+                    .gte('created_at', payrollPeriod.start)
+                    .lte('created_at', payrollPeriod.end);
+
+                setAssignments(assignData || []);
 
                 // Fetch Payroll Runs
                 const { data: runs } = await (supabase as any)
                     .from('payroll_runs')
                     .select('*')
-                    .eq('organization_id', profile.organization_id)
+                    .eq('organization_id', orgId)
                     .order('created_at', { ascending: false });
                 setPayrollRuns(runs || []);
             }
@@ -118,13 +134,38 @@ const Financials = () => {
     };
 
     const calculatePayroll = () => {
-        // Mock calculation: $20/hr * 40 hours per employee (replace with real shifts later)
-        return employees.map(emp => ({
-            ...emp,
-            hours: 40, // Mock
-            rate: 20, // Mock
-            total: 800 // Mock
-        }));
+        // Group assignments by employee
+        const payrollMap: { [key: string]: any } = {};
+
+        assignments.forEach(assign => {
+            const empId = assign.employee_id;
+            const shift = assign.shift;
+
+            if (!shift) return;
+
+            // Calculate hours from shift duration
+            const start = new Date(shift.start_time);
+            const end = new Date(shift.end_time);
+            const hours = Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60 * 60));
+            const rate = Number(shift.pay_rate) || 20; // Default $20 if not set
+            const total = hours * rate;
+
+            if (!payrollMap[empId]) {
+                const emp = employees.find(e => e.id === empId);
+                payrollMap[empId] = {
+                    id: empId,
+                    name: emp?.full_name || emp?.email || 'Unknown',
+                    hours: 0,
+                    total: 0,
+                    rate: rate // Keep last rate for display
+                };
+            }
+
+            payrollMap[empId].hours += hours;
+            payrollMap[empId].total += total;
+        });
+
+        return Object.values(payrollMap);
     };
 
     const runPayroll = async () => {
@@ -138,7 +179,13 @@ const Financials = () => {
                 .single();
 
             if (userProfile?.organization_id) {
-                const total = calculatePayroll().reduce((sum, emp) => sum + emp.total, 0);
+                const payrollItems = calculatePayroll();
+                const total = payrollItems.reduce((sum, emp) => sum + emp.total, 0);
+
+                if (total === 0) {
+                    alert('No payroll data for this period.');
+                    return;
+                }
 
                 const { error } = await (supabase as any).from('payroll_runs').insert({
                     organization_id: userProfile.organization_id,
@@ -364,8 +411,8 @@ const Financials = () => {
                             <tbody className="divide-y divide-gray-200 dark:divide-white/5">
                                 {calculatePayroll().map((emp) => (
                                     <tr key={emp.id} className="hover:bg-gray-50 dark:hover:bg-white/5">
-                                        <td className="px-4 py-3 font-medium">{emp.id} (Mock Name)</td>
-                                        <td className="px-4 py-3 text-right">{emp.hours} hrs</td>
+                                        <td className="px-4 py-3 font-medium">{emp.name}</td>
+                                        <td className="px-4 py-3 text-right">{emp.hours.toFixed(1)} hrs</td>
                                         <td className="px-4 py-3 text-right">${emp.rate}/hr</td>
                                         <td className="px-4 py-3 text-right font-bold text-green-500">${emp.total.toFixed(2)}</td>
                                     </tr>

@@ -37,7 +37,7 @@ const StoreManagerView = () => {
 
             try {
                 // 1. Get Org ID
-                const { data: profile } = await supabase
+                const { data: profile } = await (supabase as any)
                     .from('profiles')
                     .select('organization_id')
                     .eq('id', user.id)
@@ -57,7 +57,7 @@ const StoreManagerView = () => {
                         status,
                         service:services(price)
                     `)
-                    .eq('organization_id', profile.organization_id)
+                    .eq('organization_id', (profile as any).organization_id)
                     .neq('status', 'cancelled');
 
                 if (bookings && bookings.length > 0) {
@@ -145,7 +145,7 @@ const StoreManagerView = () => {
                 </div>
                 <div className="h-80">
                     {chartData.length > 0 && chartData.some(d => d.revenue > 0) ? (
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <ResponsiveContainer width="100%" height="100%">
                             <ComposedChart data={chartData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
                                 <XAxis dataKey="day" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />

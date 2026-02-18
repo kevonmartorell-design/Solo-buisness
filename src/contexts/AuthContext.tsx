@@ -9,6 +9,7 @@ interface User {
     name: string;
     role: Role;
     tier: Tier;
+    onboardingComplete?: boolean;
 }
 
 interface AuthContextType {
@@ -55,7 +56,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 .select(`
                     *,
                     organizations (
-                        tier
+                        tier,
+                        onboarding_complete
                     )
                 `)
                 .eq('id', userId)
@@ -78,7 +80,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     id: userId,
                     name: profile.full_name || 'User',
                     role,
-                    tier
+                    tier,
+                    onboardingComplete: !!profile.organizations?.onboarding_complete
                 });
             }
         } catch (error) {

@@ -19,9 +19,14 @@ const ProtectedRoute = ({ children, allowedRoles, allowedTiers }: ProtectedRoute
     }
 
     if (allowedTiers && !allowedTiers.includes(user.tier)) {
-        // specific redirect logic could go here, for now default to dashboard
-        // which will be smart enough to show them their safe home
         return <Navigate to="/dashboard" replace />;
+    }
+
+    // New: Check for onboarding completion
+    // We allow access if onboardingComplete is undefined (new user without org yet) or true
+    // If explicitly false, redirect to onboarding
+    if (user.onboardingComplete === false) {
+        return <Navigate to="/onboarding" replace />;
     }
 
     return <>{children}</>;

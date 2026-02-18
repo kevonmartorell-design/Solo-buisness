@@ -710,7 +710,7 @@ const Settings = () => {
                     </p>
                 </div>
             </main>
-        </div >
+        </div>
     );
 };
 
