@@ -48,7 +48,7 @@ const getDaysUntilExpiry = (dateString: string) => {
 const Vault = () => {
     const navigate = useNavigate();
     const { toggleSidebar } = useSidebar();
-    const { documents, addDocument, deleteDocument, getExpiringDocuments, customCategories } = useVault();
+    const { documents, addDocument, deleteDocument, getExpiringDocuments, customCategories, getDocumentUrl } = useVault();
     const [activeFilter, setActiveFilter] = useState<'All' | string>('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -89,23 +89,20 @@ const Vault = () => {
         }
     };
 
-    const handleUpload = () => {
+    const handleUpload = async () => {
         if (!selectedFile || !uploadName || !uploadExpiry) return;
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const base64String = reader.result as string;
-
-            addDocument({
+        try {
+            await addDocument({
                 name: uploadName,
                 type: uploadType,
                 category: uploadCategory,
                 expiryDate: uploadExpiry,
                 status: 'Pending', // Will be recalculated by context
-                fileData: base64String,
+                // fileData: base64String, // No longer needed
                 fileName: selectedFile.name,
                 fileSize: `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
-            });
+            }, selectedFile);
 
             // Reset
             setIsUploadModalOpen(false);
@@ -113,8 +110,19 @@ const Vault = () => {
             setUploadExpiry('');
             setSelectedFile(null);
             if (fileInputRef.current) fileInputRef.current.value = '';
-        };
-        reader.readAsDataURL(selectedFile);
+        } catch (error) {
+            console.error("Upload failed", error);
+            alert("Failed to upload document");
+        }
+    };
+
+    const handleView = async (doc: VaultItem) => {
+        const url = await getDocumentUrl(doc.id);
+        if (url) {
+            window.open(url, '_blank');
+        } else {
+            alert('Unable to view document. It may not have a valid file attached.');
+        }
     };
 
     return (
@@ -288,7 +296,11 @@ const Vault = () => {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors" title="View">
+                                                    <button
+                                                        onClick={() => handleView(doc)}
+                                                        className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                                        title="View"
+                                                    >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
                                                     <button

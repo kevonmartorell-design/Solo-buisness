@@ -5,11 +5,12 @@ import { useAuth } from './AuthContext';
 
 interface VaultContextType {
     documents: VaultItem[];
-    addDocument: (doc: Omit<VaultItem, 'id' | 'lastUpdated'>) => Promise<void>;
+    addDocument: (doc: Omit<VaultItem, 'id' | 'lastUpdated'>, file?: File) => Promise<void>;
     deleteDocument: (id: string) => Promise<void>;
     updateDocument: (id: string, updates: Partial<VaultItem>) => Promise<void>;
     getExpiringDocuments: () => VaultItem[];
     // Customization
+    getDocumentUrl: (id: string) => Promise<string | null>;
     industry: string;
     updateIndustry: (ind: string) => void;
     customCategories: VaultCategory[];
@@ -27,6 +28,30 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const [industry, setIndustry] = useState('General');
     const [loading, setLoading] = useState(true);
 
+    // ... (existing code)
+
+    const getDocumentUrl = async (id: string): Promise<string | null> => {
+        try {
+            const { data: doc } = await (supabase as any)
+                .from('vault_documents')
+                .select('file_path')
+                .eq('id', id)
+                .single();
+
+            if (!doc?.file_path) return null;
+
+            const { data, error } = await supabase.storage
+                .from('vault_documents')
+                .createSignedUrl(doc.file_path, 60 * 60); // 1 hour expiry
+
+            if (error) throw error;
+            return data.signedUrl;
+        } catch (error) {
+            console.error('Error getting document URL:', error);
+            return null;
+        }
+    };
+
     // Initial Data Fetch
     useEffect(() => {
         const fetchData = async () => {
@@ -40,7 +65,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
             try {
                 // Get Org ID
-                const { data: profile } = await supabase
+                const { data: profile } = await (supabase as any)
                     .from('profiles')
                     .select('organization_id')
                     .eq('id', user.id)
@@ -53,7 +78,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 const orgId = profile.organization_id;
 
                 // Get Organization Data (Industry)
-                const { data: org } = await supabase
+                const { data: org } = await (supabase as any)
                     .from('organizations')
                     .select('onboarding_data')
                     .eq('id', orgId)
@@ -67,7 +92,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 }
 
                 // Fetch Documents
-                const { data: docsData, error: docsError } = await supabase
+                const { data: docsData, error: docsError } = await (supabase as any)
                     .from('vault_documents')
                     .select('*')
                     .eq('organization_id', orgId)
@@ -76,7 +101,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 if (docsError) throw docsError;
 
                 if (docsData) {
-                    setDocuments(docsData.map((d) => ({
+                    setDocuments(docsData.map((d: any) => ({
                         id: d.id,
                         name: d.name,
                         type: d.type || 'License',
@@ -91,7 +116,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 }
 
                 // Fetch Categories
-                const { data: catsData, error: catsError } = await supabase
+                const { data: catsData, error: catsError } = await (supabase as any)
                     .from('vault_categories')
                     .select('*')
                     .eq('organization_id', orgId);
@@ -99,7 +124,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 if (catsError) throw catsError;
 
                 if (catsData) {
-                    setCustomCategories(catsData.map((c) => ({
+                    setCustomCategories(catsData.map((c: any) => ({
                         id: c.id,
                         name: c.name,
                         color: c.color || 'blue',
@@ -117,16 +142,17 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         fetchData();
     }, [user]);
 
-    const addDocument = async (doc: Omit<VaultItem, 'id' | 'lastUpdated'>) => {
+    const addDocument = async (doc: Omit<VaultItem, 'id' | 'lastUpdated'>, file?: File) => {
         if (!user) return;
         try {
-            const { data: profile } = await supabase
+            const { data: profile } = await (supabase as any)
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', user.id)
                 .single();
 
             if (!profile?.organization_id) return;
+            const orgId = profile.organization_id;
 
             // Auto-calculate status
             let status: VaultItem['status'] = 'Pending';
@@ -140,8 +166,21 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 else status = 'Verified';
             }
 
+            let filePath = null;
+            if (file) {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+                filePath = `${orgId}/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('vault_documents')
+                    .upload(filePath, file);
+
+                if (uploadError) throw uploadError;
+            }
+
             const newDoc = {
-                organization_id: profile.organization_id,
+                organization_id: orgId,
                 name: doc.name,
                 type: doc.type,
                 category: doc.category,
@@ -149,10 +188,10 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 status: status,
                 file_size: doc.fileSize,
                 file_name: doc.fileName,
-                file_data: doc.fileData // Storing base64 text
+                file_path: filePath,
             };
 
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('vault_documents')
                 .insert([newDoc])
                 .select()
@@ -170,7 +209,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     category: data.category || 'General',
                     fileSize: data.file_size || '0 MB',
                     lastUpdated: new Date(data.updated_at).toISOString().split('T')[0],
-                    fileData: data.file_data || undefined,
+                    fileData: undefined, // No longer keeping base64 in state for all docs (performance)
                     fileName: data.file_name || undefined
                 };
                 setDocuments(prev => [mappedDoc, ...prev]);
@@ -183,7 +222,21 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const deleteDocument = async (id: string) => {
         try {
-            const { error } = await supabase
+            // Get file path first
+            const { data: doc } = await (supabase as any)
+                .from('vault_documents')
+                .select('file_path')
+                .eq('id', id)
+                .single();
+
+            if (doc?.file_path) {
+                await supabase.storage
+                    .from('vault_documents')
+                    .remove([doc.file_path]);
+            }
+
+            // Delete record
+            const { error } = await (supabase as any)
                 .from('vault_documents')
                 .delete()
                 .eq('id', id);
@@ -217,7 +270,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         try {
             // Get Org ID
-            const { data: profile } = await supabase
+            const { data: profile } = await (supabase as any)
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', user.id)
@@ -226,7 +279,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (!profile?.organization_id) return;
 
             // Fetch current onboarding data first to merge
-            const { data: org } = await supabase
+            const { data: org } = await (supabase as any)
                 .from('organizations')
                 .select('onboarding_data')
                 .eq('id', profile.organization_id)
@@ -235,7 +288,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const currentData = (org?.onboarding_data as any) || {};
             const updatedData = { ...currentData, industry: ind };
 
-            await supabase
+            await (supabase as any)
                 .from('organizations')
                 .update({ onboarding_data: updatedData })
                 .eq('id', profile.organization_id);
@@ -249,7 +302,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (!user) return;
         try {
             // Fetch Org ID again... should probably store this in context or helper
-            const { data: profile } = await supabase
+            const { data: profile } = await (supabase as any)
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', user.id)
@@ -257,7 +310,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
             if (!profile?.organization_id) return;
 
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('vault_categories')
                 .insert([{
                     organization_id: profile.organization_id,
@@ -285,7 +338,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const deleteCategory = async (id: string) => {
         try {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('vault_categories')
                 .delete()
                 .eq('id', id);
@@ -299,7 +352,7 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     return (
         <VaultContext.Provider value={{
-            documents, addDocument, deleteDocument, updateDocument, getExpiringDocuments,
+            documents, addDocument, deleteDocument, updateDocument, getExpiringDocuments, getDocumentUrl,
             industry, updateIndustry, customCategories, addCategory, deleteCategory, loading
         }}>
             {children}
