@@ -247,16 +247,21 @@ const Profile = () => {
                                 </div>
                                 <div className="overflow-hidden">
                                     <p className="text-white/80 text-xs font-bold uppercase tracking-wider">Public Booking Link</p>
-                                    <p className="text-white font-semibold truncate max-w-[150px] sm:max-w-xs cursor-pointer hover:underline" title="Click to test link">
-                                        {orgName ? `${orgName.replace(/\s+/g, '').toLowerCase()}.kevonmartorell.com/booking` : 'your-business.kevonmartorell.com/booking'}
+                                    <p
+                                        data-org-id={organization?.id}
+                                        className="text-white font-semibold truncate max-w-[150px] sm:max-w-xs cursor-pointer hover:underline"
+                                        title="Click to test link"
+                                        onClick={() => window.open(`/booking/${organization?.id || user.id}`, '_blank')}
+                                    >
+                                        {organization?.id ? `.../booking/${organization.id.slice(0, 8)}...` : 'Generate Link...'}
                                     </p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => {
-                                    const link = orgName ? `${orgName.replace(/\s+/g, '').toLowerCase()}.kevonmartorell.com/booking` : 'your-business.kevonmartorell.com/booking';
+                                    const link = `${window.location.origin}/booking/${organization?.id || user.id}`;
                                     navigator.clipboard.writeText(link);
-                                    alert('Link copied to clipboard!'); // Simple feedback for now
+                                    alert('Link copied to clipboard!');
                                 }}
                                 className="bg-white text-[#de5c1b] px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 active:scale-95 transition-transform shrink-0"
                             >
