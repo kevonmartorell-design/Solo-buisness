@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
 export type OnboardingData = {
     // Section 1: Business Basics
@@ -273,6 +273,19 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
     const [step, setStep] = useState(1);
     const totalSteps = 14;
 
+    useEffect(() => {
+        const initTier = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user?.user_metadata?.tier) {
+                const tier = session.user.user_metadata.tier.toLowerCase();
+                if (['solo', 'business', 'enterprise'].includes(tier)) {
+                    updateData({ selectedTier: tier as any });
+                }
+            }
+        };
+        initTier();
+    }, []);
+
     const updateData = (updates: Partial<OnboardingData>) => {
         setData((prev) => ({ ...prev, ...updates }));
     };
@@ -301,7 +314,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
                     employee_count: parseInt(data.employeeCount) || 1,
                     onboarding_data: data,
                     onboarding_complete: true,
-                })
+                } as any)
                 .select()
                 .single();
 
@@ -316,8 +329,8 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
                     .from('profiles')
                     .update({
                         organization_id: org.id,
-                        role: 'super_admin' as any, // Explicit cast to avoid type issues if types aren't perfect
-                    })
+                        role: 'super_admin' as any,
+                    } as any)
                     .eq('id', user.id);
 
                 if (profileError) {

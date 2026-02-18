@@ -60,7 +60,11 @@ const Step5ServicesOfferings = () => {
             <div className="space-y-6">
                 {/* 5.1 Service Catalog */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">How many different services/products do you offer?</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {data.selectedTier === 'solo'
+                            ? 'How many services do you offer?'
+                            : 'How many different services/products do you offer?'}
+                    </label>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {serviceCountOptions.map((option) => (
                             <div key={option} className="flex items-center">

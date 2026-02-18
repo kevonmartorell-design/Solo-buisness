@@ -41,8 +41,8 @@ const Step13SummaryReview = () => {
                     </div>
                     <div>
                         <h3 className="font-semibold text-gray-900">Team</h3>
-                        <p className="text-gray-600">{data.employeeCount} Employees</p>
-                        <p className="text-gray-600">{data.roles.length} Roles Defined</p>
+                        <p className="text-gray-600">{data.employeeCount}</p>
+                        {data.selectedTier !== 'solo' && <p className="text-gray-600">{data.roles.length} Roles Defined</p>}
                     </div>
                     <div>
                         <h3 className="font-semibold text-gray-900">Operations</h3>

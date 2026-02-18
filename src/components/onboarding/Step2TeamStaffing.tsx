@@ -57,7 +57,9 @@ const Step2TeamStaffing = () => {
             <div className="border-b border-gray-200 pb-4">
                 <h2 className="text-2xl font-bold text-gray-900">Team & Staffing</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                    Tell us about your team structure and size.
+                    {data.selectedTier === 'solo'
+                        ? 'Confirm your solo status or add team details if you plan to grow.'
+                        : 'Tell us about your team structure and size.'}
                 </p>
             </div>
 
@@ -82,6 +84,11 @@ const Step2TeamStaffing = () => {
                             </div>
                         ))}
                     </div>
+                    {data.selectedTier === 'solo' && (
+                        <p className="text-xs text-blue-600 mt-2">
+                            * As a solo business, select '1-5 employees' (yourself included) or relevant size.
+                        </p>
+                    )}
                 </div>
 
                 <div>

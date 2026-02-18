@@ -1,13 +1,77 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBranding } from '../../contexts/BrandingContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 
 const Login = () => {
     const navigate = useNavigate();
+    const { login } = useAuth();
     const { companyName, logoUrl } = useBranding();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // TEMPORARY: Backdoor to create test account
+    const createTestAccount = async () => {
+        setLoading(true);
+        try {
+            const email = `test.solo.${Date.now()}@example.com`;
+            const password = 'Password123!';
+
+            // 1. Sign Up
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: 'Test Solo User',
+                        tier: 'Solo',
+                    }
+                }
+            });
+
+            if (authError) throw authError;
+
+            if (authData.user) {
+                // 2. Create Org (bypassing onboarding)
+                const { data: orgData, error: orgError } = await supabase
+                    .from('organizations')
+                    .insert({
+                        business_name: 'Test Solo Biz',
+                        tier: 'solo',
+                        employee_count: 1,
+                        onboarding_complete: true, // KEY: This skips onboarding
+                    } as any)
+                    .select()
+                    .single();
+
+                if (orgError) throw orgError;
+
+                // 3. Update Profile
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .update({
+                        organization_id: orgData.id,
+                        role: 'super_admin' as any
+                    } as any)
+                    .eq('id', authData.user.id);
+
+                // If we need org_id in profile, we'd select it from org creation above 
+                // but let's see if your system auto-links. 
+                // If not, this might leave them org-less but "onboarding complete".
+
+                // 4. Force refresh of AuthContext to get updated profile (with org link)
+                await login();
+
+                navigate('/dashboard');
+            }
+        } catch (err: any) {
+            console.error('Backdoor error:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -125,6 +189,15 @@ const Login = () => {
                         >
                             <span className="material-symbols-outlined text-xl">login</span>
                             {loading ? 'LOGGING IN...' : 'LOGIN TO TERMINAL'}
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={createTestAccount}
+                            disabled={loading}
+                            className="w-full mt-3 flex justify-center py-3 px-4 border border-green-500/50 rounded-lg shadow-sm text-sm font-bold text-green-400 hover:bg-green-500/10 active:scale-[0.98] transition-all uppercase tracking-wider"
+                        >
+                            ⚡ Fast Track: Create Test Account
                         </button>
                     </form>
 

@@ -134,23 +134,25 @@ const Settings = () => {
                 </section>
 
                 {/* Section: Appearance */}
-                <section className="mt-8">
-                    <h2 className="px-6 text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em] mb-2">App Theme</h2>
-                    <div className="px-4 grid grid-cols-3 gap-3">
-                        <div className="bg-white dark:bg-white/10 border-2 border-transparent p-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer hover:border-[#de5c1b]/50 transition-all shadow-sm">
-                            <Sun className="text-gray-400 w-8 h-8" />
-                            <span className="text-xs font-medium">Light</span>
+                {user?.tier === 'Business' && (
+                    <section className="mt-8">
+                        <h2 className="px-6 text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em] mb-2">App Theme</h2>
+                        <div className="px-4 grid grid-cols-3 gap-3">
+                            <div className="bg-white dark:bg-white/10 border-2 border-transparent p-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer hover:border-[#de5c1b]/50 transition-all shadow-sm">
+                                <Sun className="text-gray-400 w-8 h-8" />
+                                <span className="text-xs font-medium">Light</span>
+                            </div>
+                            <div className="bg-white/5 dark:bg-[#de5c1b]/20 border-2 border-[#de5c1b] p-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer transition-all shadow-sm">
+                                <Moon className="text-[#de5c1b] w-8 h-8" />
+                                <span className="text-xs font-bold text-[#de5c1b]">Dark</span>
+                            </div>
+                            <div className="bg-white dark:bg-white/10 border-2 border-transparent p-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer hover:border-[#de5c1b]/50 transition-all shadow-sm">
+                                <Monitor className="text-gray-400 w-8 h-8" />
+                                <span className="text-xs font-medium">System</span>
+                            </div>
                         </div>
-                        <div className="bg-white/5 dark:bg-[#de5c1b]/20 border-2 border-[#de5c1b] p-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer transition-all shadow-sm">
-                            <Moon className="text-[#de5c1b] w-8 h-8" />
-                            <span className="text-xs font-bold text-[#de5c1b]">Dark</span>
-                        </div>
-                        <div className="bg-white dark:bg-white/10 border-2 border-transparent p-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer hover:border-[#de5c1b]/50 transition-all shadow-sm">
-                            <Monitor className="text-gray-400 w-8 h-8" />
-                            <span className="text-xs font-medium">System</span>
-                        </div>
-                    </div>
-                </section>
+                    </section>
+                )}
 
                 {/* Section: Security */}
                 <section className="mt-8">
@@ -181,221 +183,225 @@ const Settings = () => {
                 </section>
 
                 {/* Section: Branding Studio */}
-                <section className="mt-8">
-                    <h2 className="px-6 text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em] mb-2">Branding Studio</h2>
-                    <div className="bg-white/5 dark:bg-white/5 mx-4 rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent p-4 space-y-4">
-                        {/* Company Name */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Company Name</label>
-                            <div className="relative">
-                                <Type className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input
-                                    type="text"
-                                    value={companyName}
-                                    onChange={(e) => setCompanyName(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-medium focus:ring-2 focus:ring-[#de5c1b] outline-none"
-                                    placeholder="Enter company name"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Brand Color */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Brand Color</label>
-                            <div className="flex items-center gap-3">
-                                <div className="relative w-10 h-10 rounded-lg overflow-hidden border-2 border-white dark:border-[#211611] shadow-sm">
+                {user?.tier === 'Business' && (
+                    <section className="mt-8">
+                        <h2 className="px-6 text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em] mb-2">Branding Studio</h2>
+                        <div className="bg-white/5 dark:bg-white/5 mx-4 rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent p-4 space-y-4">
+                            {/* Company Name */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Company Name</label>
+                                <div className="relative">
+                                    <Type className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <input
-                                        type="color"
-                                        value={primaryColor}
-                                        onChange={(e) => setPrimaryColor(e.target.value)}
-                                        className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer"
+                                        type="text"
+                                        value={companyName}
+                                        onChange={(e) => setCompanyName(e.target.value)}
+                                        className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-medium focus:ring-2 focus:ring-[#de5c1b] outline-none"
+                                        placeholder="Enter company name"
                                     />
                                 </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-code">{primaryColor}</p>
-                                    <p className="text-xs text-gray-500">Click circle to pick a new color</p>
-                                </div>
-                                <Palette className="text-gray-400 w-5 h-5" />
                             </div>
-                        </div>
 
-
-                        {/* Secondary Brand Color */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Secondary Color</label>
-                            <div className="flex items-center gap-3">
-                                <div className="relative w-10 h-10 rounded-lg overflow-hidden border-2 border-white dark:border-[#211611] shadow-sm">
-                                    <input
-                                        type="color"
-                                        value={secondaryColor}
-                                        onChange={(e) => setSecondaryColor(e.target.value)}
-                                        className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer"
-                                    />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-code">{secondaryColor}</p>
-                                    <p className="text-xs text-gray-500">Accents & Backgrounds</p>
-                                </div>
-                                <Palette className="text-gray-400 w-5 h-5" />
-                            </div>
-                        </div>
-
-                        {/* Font Selection */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Typography</label>
-                            <div className="relative">
-                                <Type className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <select
-                                    value={font}
-                                    onChange={(e) => setFont(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-medium focus:ring-2 focus:ring-[#de5c1b] outline-none appearance-none"
-                                >
-                                    <option value="Inter">Inter (Modern)</option>
-                                    <option value="Roboto">Roboto (Clean)</option>
-                                    <option value="Outfit">Outfit (Geometric)</option>
-                                    <option value="Playfair Display">Playfair Display (Serif)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Custom Domain */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Custom Domain</label>
-                            <div className="relative">
-                                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input
-                                    type="text"
-                                    value={customDomain}
-                                    onChange={(e) => setCustomDomain(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-medium focus:ring-2 focus:ring-[#de5c1b] outline-none"
-                                    placeholder="app.yourbusiness.com"
-                                />
-                            </div>
-                            <p className="text-[10px] text-gray-500 mt-1">Requires DNS verification.</p>
-                        </div>
-
-                        {/* Logo Upload */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Company Logo</label>
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-slate-100 dark:bg-white/5 rounded-lg flex items-center justify-center border border-dashed border-slate-300 dark:border-white/20 overflow-hidden">
-                                    {logoUrl ? (
-                                        <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
-                                    ) : (
-                                        <span className="text-xs text-gray-400 font-bold">No Logo</span>
-                                    )}
-                                </div>
-                                <div className="flex-1">
-                                    <label className="cursor-pointer bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-bold transition-colors inline-block">
-                                        <Upload className="w-4 h-4 inline mr-2" />
-                                        Upload New Logo
+                            {/* Brand Color */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Brand Color</label>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative w-10 h-10 rounded-lg overflow-hidden border-2 border-white dark:border-[#211611] shadow-sm">
                                         <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) {
-                                                    const reader = new FileReader();
-                                                    reader.onloadend = () => {
-                                                        setLogoUrl(reader.result as string);
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                }
-                                            }}
+                                            type="color"
+                                            value={primaryColor}
+                                            onChange={(e) => setPrimaryColor(e.target.value)}
+                                            className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer"
                                         />
-                                    </label>
-                                    <p className="text-xs text-gray-500 mt-2">Recommended: 200x200px PNG</p>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-code">{primaryColor}</p>
+                                        <p className="text-xs text-gray-500">Click circle to pick a new color</p>
+                                    </div>
+                                    <Palette className="text-gray-400 w-5 h-5" />
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Reset Button */}
-                        <div className="pt-2 border-t border-slate-100 dark:border-white/5">
-                            <button
-                                onClick={resetBranding}
-                                className="text-xs text-red-500 hover:text-red-400 font-bold uppercase tracking-wider transition-colors"
-                            >
-                                Reset to Default
-                            </button>
+
+                            {/* Secondary Brand Color */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Secondary Color</label>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative w-10 h-10 rounded-lg overflow-hidden border-2 border-white dark:border-[#211611] shadow-sm">
+                                        <input
+                                            type="color"
+                                            value={secondaryColor}
+                                            onChange={(e) => setSecondaryColor(e.target.value)}
+                                            className="absolute -top-2 -left-2 w-16 h-16 cursor-pointer"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-code">{secondaryColor}</p>
+                                        <p className="text-xs text-gray-500">Accents & Backgrounds</p>
+                                    </div>
+                                    <Palette className="text-gray-400 w-5 h-5" />
+                                </div>
+                            </div>
+
+                            {/* Font Selection */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Typography</label>
+                                <div className="relative">
+                                    <Type className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <select
+                                        value={font}
+                                        onChange={(e) => setFont(e.target.value)}
+                                        className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-medium focus:ring-2 focus:ring-[#de5c1b] outline-none appearance-none"
+                                    >
+                                        <option value="Inter">Inter (Modern)</option>
+                                        <option value="Roboto">Roboto (Clean)</option>
+                                        <option value="Outfit">Outfit (Geometric)</option>
+                                        <option value="Playfair Display">Playfair Display (Serif)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Custom Domain */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Custom Domain</label>
+                                <div className="relative">
+                                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        value={customDomain}
+                                        onChange={(e) => setCustomDomain(e.target.value)}
+                                        className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-medium focus:ring-2 focus:ring-[#de5c1b] outline-none"
+                                        placeholder="app.yourbusiness.com"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-500 mt-1">Requires DNS verification.</p>
+                            </div>
+
+                            {/* Logo Upload */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Company Logo</label>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 bg-slate-100 dark:bg-white/5 rounded-lg flex items-center justify-center border border-dashed border-slate-300 dark:border-white/20 overflow-hidden">
+                                        {logoUrl ? (
+                                            <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                                        ) : (
+                                            <span className="text-xs text-gray-400 font-bold">No Logo</span>
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="cursor-pointer bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-bold transition-colors inline-block">
+                                            <Upload className="w-4 h-4 inline mr-2" />
+                                            Upload New Logo
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        const reader = new FileReader();
+                                                        reader.onloadend = () => {
+                                                            setLogoUrl(reader.result as string);
+                                                        };
+                                                        reader.readAsDataURL(file);
+                                                    }
+                                                }}
+                                            />
+                                        </label>
+                                        <p className="text-xs text-gray-500 mt-2">Recommended: 200x200px PNG</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Reset Button */}
+                            <div className="pt-2 border-t border-slate-100 dark:border-white/5">
+                                <button
+                                    onClick={resetBranding}
+                                    className="text-xs text-red-500 hover:text-red-400 font-bold uppercase tracking-wider transition-colors"
+                                >
+                                    Reset to Default
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                )}
 
                 {/* Section: Branded Communication */}
-                <section className="mt-8">
-                    <h2 className="px-6 text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em] mb-2">Branded Communication</h2>
-                    <div className="bg-white/5 dark:bg-white/5 mx-4 rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent p-4 space-y-4">
-                        {/* SMTP Settings */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
-                                <Mail className="w-3 h-3" /> Custom SMTP (Email)
-                            </label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <input
-                                    type="text"
-                                    value={smtpSettings.host}
-                                    onChange={(e) => setSmtpSettings({ ...smtpSettings, host: e.target.value })}
-                                    placeholder="SMTP Host (e.g. smtp.gmail.com)"
-                                    className="px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-xs"
-                                />
-                                <input
-                                    type="text"
-                                    value={smtpSettings.port}
-                                    onChange={(e) => setSmtpSettings({ ...smtpSettings, port: e.target.value })}
-                                    placeholder="Port (e.g. 587)"
-                                    className="px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-xs"
-                                />
-                                <input
-                                    type="text"
-                                    value={smtpSettings.user}
-                                    onChange={(e) => setSmtpSettings({ ...smtpSettings, user: e.target.value })}
-                                    placeholder="Username"
-                                    className="px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-xs"
-                                />
-                                <input
-                                    type="password"
-                                    value={smtpSettings.pass}
-                                    onChange={(e) => setSmtpSettings({ ...smtpSettings, pass: e.target.value })}
-                                    placeholder="Password"
-                                    className="px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-xs"
-                                />
-                            </div>
-                        </div>
-
-                        {/* SMS Sender ID */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
-                                <Smartphone className="w-3 h-3" /> SMS Sender ID
-                            </label>
-                            <input
-                                type="text"
-                                value={smsSenderId}
-                                onChange={(e) => setSmsSenderId(e.target.value)}
-                                placeholder="e.g. MyBiz (Max 11 chars)"
-                                maxLength={11}
-                                className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm"
-                            />
-                        </div>
-
-                        {/* Powered By Toggle */}
-                        <div className="flex items-center justify-between pt-2">
-                            <div className="flex items-center gap-2">
-                                <Power className="w-4 h-4 text-gray-400" />
-                                <div>
-                                    <p className="text-sm font-bold text-gray-700 dark:text-gray-200">Show "Powered by"</p>
-                                    <p className="text-xs text-gray-500">Remove WorkForce branding from footer.</p>
+                {user?.tier === 'Business' && (
+                    <section className="mt-8">
+                        <h2 className="px-6 text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em] mb-2">Branded Communication</h2>
+                        <div className="bg-white/5 dark:bg-white/5 mx-4 rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent p-4 space-y-4">
+                            {/* SMTP Settings */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
+                                    <Mail className="w-3 h-3" /> Custom SMTP (Email)
+                                </label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input
+                                        type="text"
+                                        value={smtpSettings.host}
+                                        onChange={(e) => setSmtpSettings({ ...smtpSettings, host: e.target.value })}
+                                        placeholder="SMTP Host (e.g. smtp.gmail.com)"
+                                        className="px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-xs"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={smtpSettings.port}
+                                        onChange={(e) => setSmtpSettings({ ...smtpSettings, port: e.target.value })}
+                                        placeholder="Port (e.g. 587)"
+                                        className="px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-xs"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={smtpSettings.user}
+                                        onChange={(e) => setSmtpSettings({ ...smtpSettings, user: e.target.value })}
+                                        placeholder="Username"
+                                        className="px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-xs"
+                                    />
+                                    <input
+                                        type="password"
+                                        value={smtpSettings.pass}
+                                        onChange={(e) => setSmtpSettings({ ...smtpSettings, pass: e.target.value })}
+                                        placeholder="Password"
+                                        className="px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-xs"
+                                    />
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setShowPoweredBy(!showPoweredBy)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${showPoweredBy ? 'bg-[#de5c1b]' : 'bg-gray-200 dark:bg-gray-700'}`}
-                            >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showPoweredBy ? 'translate-x-6' : 'translate-x-1'}`} />
-                            </button>
+
+                            {/* SMS Sender ID */}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2">
+                                    <Smartphone className="w-3 h-3" /> SMS Sender ID
+                                </label>
+                                <input
+                                    type="text"
+                                    value={smsSenderId}
+                                    onChange={(e) => setSmsSenderId(e.target.value)}
+                                    placeholder="e.g. MyBiz (Max 11 chars)"
+                                    maxLength={11}
+                                    className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-sm"
+                                />
+                            </div>
+
+                            {/* Powered By Toggle */}
+                            <div className="flex items-center justify-between pt-2">
+                                <div className="flex items-center gap-2">
+                                    <Power className="w-4 h-4 text-gray-400" />
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-700 dark:text-gray-200">Show "Powered by"</p>
+                                        <p className="text-xs text-gray-500">Remove WorkForce branding from footer.</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowPoweredBy(!showPoweredBy)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${showPoweredBy ? 'bg-[#de5c1b]' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${showPoweredBy ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                )}
 
                 {/* Section: Industry & Compliance */}
                 <section className="mt-8">

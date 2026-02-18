@@ -38,7 +38,7 @@ const ClientOverview = () => {
                             duration
                         ),
                         organization:organizations (
-                            name
+                            business_name
                         )
                     `)
                     .eq('client_id', user.id) // This assumes the user.id IS the client_id

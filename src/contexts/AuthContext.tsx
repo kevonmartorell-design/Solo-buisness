@@ -13,7 +13,7 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
-    login: (role?: Role, tier?: Tier) => void;
+    login: () => Promise<void>;
     logout: () => void;
     updateRole: (role: Role) => void;
     updateTier: (tier: Tier) => void;
@@ -91,12 +91,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const login = async () => {
-        // This function is now mostly for backward compatibility or forced updates if needed.
-        // Real login happens via supabase.auth.signInWithPassword elsewhere.
-        // We could verify session here.
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-            fetchProfile(session.user.id);
+            await fetchProfile(session.user.id);
         }
     };
 

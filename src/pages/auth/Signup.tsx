@@ -1,16 +1,26 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { useBranding } from '../../contexts/BrandingContext';
 import { supabase } from '../../lib/supabase';
 
 const Signup = () => {
     const navigate = useNavigate();
+    const { login } = useAuth();
     const { companyName, logoUrl } = useBranding();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const [searchParams] = useSearchParams();
-    const tier = searchParams.get('tier') || 'Free'; // Default to Free if not specified, though usually links will specify
+    const [tier, setTier] = useState<string>(searchParams.get('tier') || 'Free'); // Default to Free if not specified
+
+    // Put tier back in URL for consistency if user refreshes
+    React.useEffect(() => {
+        const currentTier = searchParams.get('tier');
+        if (currentTier && currentTier !== tier) {
+            setTier(currentTier);
+        }
+    }, [searchParams]);
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -29,7 +39,7 @@ const Signup = () => {
                 options: {
                     data: {
                         full_name: fullName,
-                        tier: tier, // Pass tier to metadata
+                        tier: tier.toLowerCase(), // Pass tier to metadata normalized
                     },
                 },
             });
@@ -37,9 +47,14 @@ const Signup = () => {
             if (error) throw error;
 
             if (data.user) {
-                // If tier is Free (Client), skip onboarding and go straight to dashboard
-                // For Solo and Business, go to onboarding to set up company
-                if (tier === 'Free') {
+                // Ensure auth context is refreshed with the new session/profile before navigating
+                await login();
+
+                // If tier is free (Client), skip onboarding and go straight to dashboard
+                // For solo and business, go to onboarding to set up company
+                const selectedTier = tier.toLowerCase();
+
+                if (selectedTier === 'free') {
                     navigate('/dashboard');
                 } else {
                     navigate('/onboarding');
@@ -84,7 +99,17 @@ const Signup = () => {
 
                 {/* Signup Card */}
                 <div className="w-full bg-[#1a1614]/80 backdrop-blur-md border border-white/10 rounded-xl p-8 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                    <h2 className="text-white text-xl font-semibold mb-6">Create Account</h2>
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-white text-xl font-semibold">Create Account</h2>
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${tier.toLowerCase() === 'solo'
+                            ? 'bg-[#de5c1b]/10 text-[#de5c1b] border-[#de5c1b]/20'
+                            : tier.toLowerCase() === 'business'
+                                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                : 'bg-white/5 text-slate-400 border-white/10'
+                            }`}>
+                            {tier.toLowerCase() === 'solo' ? 'Solo / Small Team' : tier.toLowerCase() === 'business' ? 'Business Scale' : 'Client Account'}
+                        </div>
+                    </div>
 
                     {error && (
                         <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-lg text-sm">
@@ -144,6 +169,61 @@ const Signup = () => {
                                     type="button"
                                 >
                                     <span className="material-symbols-outlined text-xl">visibility</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <label className="text-slate-400 text-sm font-medium ml-1">Select Plan</label>
+                            <div className="grid grid-cols-3 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setTier('Free')}
+                                    className={`relative flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${tier.toLowerCase() === 'free'
+                                        ? 'bg-white/10 border-white text-white'
+                                        : 'bg-[#261f1c] border-white/10 text-slate-500 hover:border-white/30 hover:bg-[#2c2420]'
+                                        }`}
+                                >
+                                    <span className="text-[10px] font-bold uppercase tracking-wider mb-1">Client</span>
+                                    <span className="text-sm font-bold">Free</span>
+                                    {tier.toLowerCase() === 'free' && (
+                                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+                                            <span className="material-symbols-outlined text-[10px] text-black font-bold">check</span>
+                                        </div>
+                                    )}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setTier('Solo')}
+                                    className={`relative flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${tier.toLowerCase() === 'solo'
+                                        ? 'bg-[#de5c1b]/20 border-[#de5c1b] text-white'
+                                        : 'bg-[#261f1c] border-white/10 text-slate-500 hover:border-[#de5c1b]/50 hover:bg-[#de5c1b]/5'
+                                        }`}
+                                >
+                                    <span className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${tier.toLowerCase() === 'solo' ? 'text-[#de5c1b]' : ''}`}>Solo</span>
+                                    <span className={`text-sm font-bold ${tier.toLowerCase() === 'solo' ? 'text-[#de5c1b]' : ''}`}>$40<span className="text-[10px] opacity-60">/mo</span></span>
+                                    {tier.toLowerCase() === 'solo' && (
+                                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#de5c1b] rounded-full flex items-center justify-center">
+                                            <span className="material-symbols-outlined text-[10px] text-white font-bold">check</span>
+                                        </div>
+                                    )}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setTier('Business')}
+                                    className={`relative flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${tier.toLowerCase() === 'business'
+                                        ? 'bg-blue-500/20 border-blue-500 text-white'
+                                        : 'bg-[#261f1c] border-white/10 text-slate-500 hover:border-blue-500/50 hover:bg-blue-500/5'
+                                        }`}
+                                >
+                                    <span className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${tier.toLowerCase() === 'business' ? 'text-blue-400' : ''}`}>Business</span>
+                                    <span className={`text-sm font-bold ${tier.toLowerCase() === 'business' ? 'text-blue-400' : ''}`}>$70<span className="text-[10px] opacity-60">/mo</span></span>
+                                    {tier.toLowerCase() === 'business' && (
+                                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                            <span className="material-symbols-outlined text-[10px] text-white font-bold">check</span>
+                                        </div>
+                                    )}
                                 </button>
                             </div>
                         </div>

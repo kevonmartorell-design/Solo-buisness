@@ -325,7 +325,7 @@ const Landing = () => {
                                 <li>Post Testimonials</li>
                             </ul>
                             <button
-                                onClick={() => user ? navigate('/dashboard') : navigate('/signup?tier=Free')}
+                                onClick={() => user ? navigate('/dashboard') : navigate('/signup?tier=free')}
                                 className="w-full py-3 border border-white/20 text-white rounded-lg font-bold hover:bg-white/5 transition-colors uppercase text-sm"
                             >
                                 Join as Client
@@ -351,7 +351,7 @@ const Landing = () => {
                                 <li className="flex items-center gap-2 justify-center"><span className="material-symbols-outlined text-[#de5c1b] text-sm">check</span> Automated Reminders</li>
                             </ul>
                             <button
-                                onClick={() => user ? navigate('/dashboard') : navigate('/signup?tier=Solo')}
+                                onClick={() => user ? navigate('/dashboard') : navigate('/signup?tier=solo')}
                                 className="w-full py-4 bg-[#de5c1b] text-white rounded-lg font-bold hover:bg-[#de5c1b]/90 transition-colors uppercase text-sm shadow-lg shadow-[#de5c1b]/20"
                             >
                                 Start Free Trial
@@ -374,7 +374,7 @@ const Landing = () => {
                                 <li className="flex items-center gap-2 justify-center"><span className="material-symbols-outlined text-white text-sm">check</span> Custom Branding</li>
                             </ul>
                             <button
-                                onClick={() => user ? navigate('/dashboard') : navigate('/signup?tier=Business')}
+                                onClick={() => user ? navigate('/dashboard') : navigate('/signup?tier=business')}
                                 className="w-full py-3 border border-white/20 text-white rounded-lg font-bold hover:bg-white/5 transition-colors uppercase text-sm"
                             >
                                 Contact Sales
