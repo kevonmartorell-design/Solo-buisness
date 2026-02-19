@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+:root {
+    --color-primary: #de5c1b;
+    --color-primary-rgb: 222 92 27;
+    /* RGB components for opacity support */
+}
