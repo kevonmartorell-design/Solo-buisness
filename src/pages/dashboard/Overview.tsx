@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import MetricCard from '../../components/dashboard/MetricCard';
@@ -28,6 +29,7 @@ const formatTimeAgo = (dateString: string) => {
 };
 
 const Overview = () => {
+    const sb = supabase as SupabaseClient<any, "public", any>;
     const { user } = useAuth();
 
     const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ const Overview = () => {
 
             try {
                 // Get Organization ID
-                const { data: profile } = await supabase
+                const { data: profile } = await sb
                     .from('profiles')
                     .select('organization_id')
                     .eq('id', user.id)
@@ -66,7 +68,7 @@ const Overview = () => {
                 const orgId = userProfile.organization_id;
 
                 // 1. Fetch Bookings with Service details for Revenue
-                const { data: bookingsData } = await supabase
+                const { data: bookingsData } = await sb
                     .from('bookings')
                     .select(`
                         id,
@@ -122,7 +124,7 @@ const Overview = () => {
 
 
                 // 3. Fetch Recent Activity (Audit Logs)
-                const { data: auditLogsData } = await supabase
+                const { data: auditLogsData } = await sb
                     .from('audit_logs')
                     .select('*')
                     .eq('organization_id', orgId)
@@ -132,7 +134,7 @@ const Overview = () => {
                 const auditLogs = auditLogsData as any[] || [];
 
                 // 4. Fetch Expenses for Net Profit
-                const { data: expensesData } = await (supabase as any)
+                const { data: expensesData } = await sb
                     .from('expenses')
                     .select('amount')
                     .eq('organization_id', orgId);

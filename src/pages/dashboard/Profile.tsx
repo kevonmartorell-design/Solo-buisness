@@ -19,6 +19,7 @@ import {
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import type { Database } from '../../types/supabase';
 
 type ProfileData = Database['public']['Tables']['profiles']['Row'];
@@ -32,6 +33,7 @@ const Profile = () => {
     const [activeTab, setActiveTab] = useState<'overview' | 'reviews' | 'portfolio'>('overview');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const { showToast } = useToast();
 
     // Form State
     const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -74,7 +76,7 @@ const Profile = () => {
             setBusinessBio(profileData.bio || '');
 
             if (profileData.organization_id) {
-                const { data: orgDataRes, error: orgError } = await (supabase as any)
+                const { data: orgDataRes, error: orgError } = await supabase
                     .from('organizations')
                     .select('*')
                     .eq('id', profileData.organization_id)
@@ -102,7 +104,7 @@ const Profile = () => {
                 }
 
                 // Fetch Reviews
-                const { data: reviewsData, error: reviewsError } = await (supabase as any)
+                const { data: reviewsData, error: reviewsError } = await supabase
                     .from('ratings_reviews')
                     .select(`
                         *,
@@ -116,6 +118,7 @@ const Profile = () => {
             }
         } catch (error) {
             console.error('Error fetching profile data:', error);
+            showToast('Failed to fetch profile data', 'error');
         } finally {
             setLoading(false);
         }
@@ -131,7 +134,6 @@ const Profile = () => {
                 .update({
                     name: fullName,
                     bio: businessBio,
-                    // updated_at: new Date().toISOString() // Supabase handles this if set up, but let's be safe
                 })
                 .eq('id', user.id);
 
@@ -163,12 +165,14 @@ const Profile = () => {
                 if (orgUpdateError) throw orgUpdateError;
             }
 
-            // Show success feedback (console for now)
-            console.log('Saved successfully');
+            // Show success feedback
+            // console.log('Saved successfully'); // Removed debug log
+            showToast('Profile updated successfully', 'success');
             await fetchData(); // Refresh data
 
-        } catch (error) {
-            console.error('Error saving profile:', error);
+        } catch (error: any) {
+            console.error('Error updating profile:', error);
+            showToast('Failed to update profile', 'error');
         } finally {
             setSaving(false);
         }
@@ -251,17 +255,21 @@ const Profile = () => {
                                         data-org-id={organization?.id}
                                         className="text-white font-semibold truncate max-w-[150px] sm:max-w-xs cursor-pointer hover:underline"
                                         title="Click to test link"
-                                        onClick={() => window.open(`/booking/${organization?.id || user.id}`, '_blank')}
+                                        onClick={() => window.open(`/booking/${organization?.id || user?.id}`, '_blank')}
                                     >
                                         {organization?.id ? `.../booking/${organization.id.slice(0, 8)}...` : 'Generate Link...'}
                                     </p>
                                 </div>
                             </div>
                             <button
-                                onClick={() => {
-                                    const link = `${window.location.origin}/booking/${organization?.id || user.id}`;
-                                    navigator.clipboard.writeText(link);
-                                    alert('Link copied to clipboard!');
+                                onClick={async () => {
+                                    const url = `${window.location.origin}/booking/${organization?.id || user?.id}`;
+                                    try {
+                                        await navigator.clipboard.writeText(url);
+                                        showToast('Copied to clipboard!', 'success');
+                                    } catch (err) {
+                                        showToast('Failed to copy to clipboard', 'error');
+                                    }
                                 }}
                                 className="bg-white text-[#de5c1b] px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 active:scale-95 transition-transform shrink-0"
                             >

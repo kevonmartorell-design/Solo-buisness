@@ -248,9 +248,9 @@ export const VaultProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     };
 
-    const updateDocument = async (id: string, updates: Partial<VaultItem>) => {
+    const updateDocument = async (_id: string, _updates: Partial<VaultItem>) => {
         // Implementation for update if needed later
-        console.log('Update not fully implemented yet for:', id, updates);
+        // console.log('Update not fully implemented yet for:', id, updates);
     };
 
     const getExpiringDocuments = () => {

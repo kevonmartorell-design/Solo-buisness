@@ -5,6 +5,7 @@ import {
     Type, Briefcase, Plus, Trash2, Globe, Smartphone, Server, FileText,
     Users, Download, ToggleRight, Power, Shield, Zap, Star
 } from 'lucide-react';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBranding } from '../../contexts/BrandingContext';
@@ -14,6 +15,7 @@ import { useSidebar } from '../../contexts/SidebarContext';
 import Billing from '../../components/dashboard/settings/Billing';
 import TierUpgradeModal from '../../components/dashboard/settings/TierUpgradeModal';
 import type { Tier } from '../../contexts/AuthContext';
+import type { Database } from '../../types/supabase';
 
 const Settings = () => {
     const { user, updateRole, updateTier, logout } = useAuth();
@@ -31,6 +33,7 @@ const Settings = () => {
         resetBranding,
         saveBranding
     } = useBranding();
+    const sb = supabase as SupabaseClient<any, "public", any>;
     const { industry, updateIndustry, customCategories, addCategory, deleteCategory } = useVault();
 
     // Local state for new category
@@ -61,7 +64,7 @@ const Settings = () => {
             const { data: { user: currentUser } } = await supabase.auth.getUser();
             if (!currentUser) return;
 
-            const { data: profile } = await (supabase as any)
+            const { data: profile } = await supabase
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', currentUser.id)
@@ -69,7 +72,7 @@ const Settings = () => {
 
             if (!profile?.organization_id) return;
 
-            const { data: clients, error } = await (supabase as any)
+            const { data: clients, error } = await sb
                 .from('clients')
                 .select('*')
                 .eq('organization_id', profile.organization_id);
@@ -121,16 +124,16 @@ const Settings = () => {
             const { data: { user: currentUser } } = await supabase.auth.getUser();
             if (!currentUser) return;
 
-            const { data: profile } = await (supabase as any)
+            const { data: profile } = await supabase
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', currentUser.id)
                 .single();
 
             if (profile?.organization_id) {
-                const { error } = await (supabase as any)
+                const { error } = await sb
                     .from('organizations')
-                    .update({ tier: newTier.toLowerCase() })
+                    .update({ tier: newTier.toLowerCase() } as any) // Casting as any for update payload if strict check fails
                     .eq('id', profile.organization_id);
 
                 if (error) throw error;
@@ -265,14 +268,14 @@ const Settings = () => {
                                             },
                                             {
                                                 name: 'Solo',
-                                                price: '$29',
+                                                price: '$40',
                                                 description: 'Professional',
                                                 icon: Zap,
                                                 color: 'text-blue-500'
                                             },
                                             {
                                                 name: 'Business',
-                                                price: '$99',
+                                                price: '$70',
                                                 description: 'Enterprise',
                                                 icon: Star,
                                                 color: 'text-[#de5c1b]'

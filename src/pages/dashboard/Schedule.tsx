@@ -10,6 +10,7 @@ import {
     Calendar as CalendarIcon,
     Briefcase
 } from 'lucide-react';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSidebar } from '../../contexts/SidebarContext';
@@ -44,6 +45,7 @@ const calculateDuration = (start: string, end: string) => {
 };
 
 const Schedule = () => {
+    const sb = supabase as SupabaseClient<any, "public", any>;
     const { toggleSidebar } = useSidebar();
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [viewMode, setViewMode] = useState<'agenda' | 'resource'>('agenda');
@@ -87,7 +89,7 @@ const Schedule = () => {
                 setOrgId(organizationId);
 
                 // 1. Fetch Resources (Profiles in the same Org)
-                const { data: teamMembers, error: teamError } = await (supabase as any)
+                const { data: teamMembers, error: teamError } = await sb
                     .from('profiles')
                     .select('id, name, role, avatar_url, department')
                     .eq('organization_id', organizationId);
@@ -104,7 +106,7 @@ const Schedule = () => {
                 setResources(mappedResources);
 
                 // 2. Fetch Events (Bookings)
-                const { data: bookings } = await supabase
+                const { data: bookings } = await sb
                     .from('bookings')
                     .select(`
                         id, 
@@ -287,7 +289,7 @@ const Schedule = () => {
 
             if (editingEvent) {
                 // Update
-                const { error } = await (supabase as any)
+                const { error } = await sb
                     .from('bookings')
                     .update(payload)
                     .eq('id', editingEvent.id);
@@ -296,7 +298,7 @@ const Schedule = () => {
                 showFeedback('Event updated successfully');
             } else {
                 // Create
-                const { error } = await (supabase as any)
+                const { error } = await sb
                     .from('bookings')
                     .insert(payload);
 
@@ -321,7 +323,7 @@ const Schedule = () => {
     const handleDeleteEvent = async (id: string) => {
         if (confirm('Are you sure you want to delete this event?')) {
             try {
-                const { error } = await (supabase as any).from('bookings').delete().eq('id', id);
+                const { error } = await sb.from('bookings').delete().eq('id', id);
                 if (error) throw error;
                 showFeedback('Event deleted');
                 window.location.reload(); // Refresh
@@ -336,7 +338,7 @@ const Schedule = () => {
     const handleClaimShift = async (id: string) => {
         if (!user) return;
         try {
-            const { error } = await (supabase as any)
+            const { error } = await sb
                 .from('bookings')
                 .update({
                     status: 'approved',
@@ -355,7 +357,7 @@ const Schedule = () => {
 
     const handleSwapRequest = async (id: string) => {
         try {
-            const { error } = await (supabase as any)
+            const { error } = await sb
                 .from('bookings')
                 .update({ status: 'swap-requested' })
                 .eq('id', id);
@@ -371,7 +373,7 @@ const Schedule = () => {
 
     const handleApproveRequest = async (id: string) => {
         try {
-            const { error } = await (supabase as any)
+            const { error } = await sb
                 .from('bookings')
                 .update({ status: 'approved' })
                 .eq('id', id);
@@ -387,7 +389,7 @@ const Schedule = () => {
 
     const handleDeclineRequest = async (id: string) => {
         try {
-            const { error } = await (supabase as any)
+            const { error } = await sb
                 .from('bookings')
                 .update({ status: 'declined' }) // Or 'open' if we want to unassign? stick to declined for now
                 .eq('id', id);
@@ -426,7 +428,7 @@ const Schedule = () => {
             }
 
             try {
-                const { error } = await (supabase as any)
+                const { error } = await sb
                     .from('bookings')
                     .update({ employee_id: resourceId })
                     .eq('id', eventId);

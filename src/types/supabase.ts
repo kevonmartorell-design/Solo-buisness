@@ -325,6 +325,7 @@ export interface Database {
                     file_size: string | null
                     file_name: string | null
                     file_data: string | null
+                    file_path: string | null
                     created_at: string
                     updated_at: string
                 }
@@ -339,6 +340,7 @@ export interface Database {
                     file_size?: string | null
                     file_name?: string | null
                     file_data?: string | null
+                    file_path?: string | null
                     created_at?: string
                     updated_at?: string
                 }
@@ -353,6 +355,7 @@ export interface Database {
                     file_size?: string | null
                     file_name?: string | null
                     file_data?: string | null
+                    file_path?: string | null
                     created_at?: string
                     updated_at?: string
                 }

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { DollarSign, PieChart, Plus, Trash2, FileText } from 'lucide-react';
 
 const Financials = () => {
+    const sb = supabase as SupabaseClient<any, "public", any>;
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<'overview' | 'expenses' | 'payroll'>('overview');
     const [loading, setLoading] = useState(true);
@@ -34,7 +36,7 @@ const Financials = () => {
         if (!user) return;
         setLoading(true);
         try {
-            const { data: profile } = await (supabase as any)
+            const { data: profile } = await sb
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', user.id)
@@ -44,7 +46,7 @@ const Financials = () => {
                 const orgId = profile.organization_id;
 
                 // Fetch Expenses
-                const { data: expenseData } = await (supabase as any)
+                const { data: expenseData } = await sb
                     .from('expenses')
                     .select('*')
                     .eq('organization_id', orgId)
@@ -52,7 +54,7 @@ const Financials = () => {
                 setExpenses(expenseData || []);
 
                 // Fetch Revenue (Bookings)
-                const { data: bookings } = await (supabase as any)
+                const { data: bookings } = await sb
                     .from('bookings')
                     .select('service:services(price)')
                     .eq('organization_id', orgId)
@@ -62,14 +64,14 @@ const Financials = () => {
                 setRevenue(totalRevenue);
 
                 // Fetch Employees
-                const { data: emps } = await (supabase as any)
+                const { data: emps } = await sb
                     .from('profiles')
                     .select('*')
                     .eq('organization_id', orgId);
                 setEmployees(emps || []);
 
                 // Fetch Assignments + Shifts for Payroll
-                const { data: assignData } = await (supabase as any)
+                const { data: assignData } = await sb
                     .from('assignments')
                     .select(`
                         *,
@@ -82,7 +84,7 @@ const Financials = () => {
                 setAssignments(assignData || []);
 
                 // Fetch Payroll Runs
-                const { data: runs } = await (supabase as any)
+                const { data: runs } = await sb
                     .from('payroll_runs')
                     .select('*')
                     .eq('organization_id', orgId)
@@ -102,14 +104,14 @@ const Financials = () => {
             const { data: profile } = await supabase.auth.getUser();
             if (!profile.user) return;
 
-            const { data: userProfile } = await (supabase as any)
+            const { data: userProfile } = await sb
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', profile.user.id)
                 .single();
 
             if (userProfile?.organization_id) {
-                const { error } = await (supabase as any).from('expenses').insert({
+                const { error } = await sb.from('expenses').insert({
                     organization_id: userProfile.organization_id,
                     ...newExpense,
                     amount: Number(newExpense.amount)
@@ -128,7 +130,7 @@ const Financials = () => {
 
     const handleDeleteExpense = async (id: string) => {
         if (confirm('Delete this expense?')) {
-            await (supabase as any).from('expenses').delete().eq('id', id);
+            await sb.from('expenses').delete().eq('id', id);
             fetchFinancialData();
         }
     };
@@ -172,7 +174,7 @@ const Financials = () => {
         if (!confirm('Process payroll for this period?')) return;
         try {
             const { data: profile } = await supabase.auth.getUser();
-            const { data: userProfile } = await (supabase as any)
+            const { data: userProfile } = await sb
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', profile.user?.id || '')
@@ -187,7 +189,7 @@ const Financials = () => {
                     return;
                 }
 
-                const { error } = await (supabase as any).from('payroll_runs').insert({
+                const { error } = await sb.from('payroll_runs').insert({
                     organization_id: userProfile.organization_id,
                     pay_period_start: payrollPeriod.start,
                     pay_period_end: payrollPeriod.end,

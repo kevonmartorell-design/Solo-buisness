@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { SupabaseClient } from '@supabase/supabase-js';
 import {
     Menu,
     Search,
@@ -23,6 +24,7 @@ import type { Database } from '../../types/supabase';
 // Define types derived from Supabase
 type ServiceRow = Database['public']['Tables']['services']['Row'];
 type ProductRow = Database['public']['Tables']['products']['Row'];
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
 interface Service extends ServiceRow {
     imageColor: string; // Helper property for UI
@@ -50,6 +52,10 @@ const Services = () => {
     const [isSearchVisible, setIsSearchVisible] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+    // Typed Supabase Client with 'any' schema to bypass rigid table inference failure
+    // while allowing explicit row typing later
+    const sb = supabase as SupabaseClient<any, "public", any>;
+
     // Form State
     const [newItemName, setNewItemName] = useState('');
     const [newItemPrice, setNewItemPrice] = useState('');
@@ -62,11 +68,15 @@ const Services = () => {
             if (!user) return;
             try {
                 // Get Org ID
-                const { data: profile } = await (supabase as any)
+                // Get Org ID
+                // Get Org ID
+                const { data: profileData } = await sb
                     .from('profiles')
                     .select('organization_id')
                     .eq('id', user.id)
                     .single();
+
+                const profile = profileData as { organization_id: string | null } | null;
 
                 if (!profile?.organization_id) {
                     setLoading(false);
@@ -75,7 +85,9 @@ const Services = () => {
                 const orgId = profile.organization_id;
 
                 // Fetch Services
-                const { data: servicesData, error: servicesError } = await (supabase as any)
+                // Fetch Services
+                // Fetch Services
+                const { data: servicesData, error: servicesError } = await sb
                     .from('services')
                     .select('*')
                     .eq('organization_id', orgId);
@@ -90,7 +102,9 @@ const Services = () => {
                 }
 
                 // Fetch Products
-                const { data: productsData, error: productsError } = await (supabase as any)
+                // Fetch Products
+                // Fetch Products
+                const { data: productsData, error: productsError } = await sb
                     .from('products')
                     .select('*')
                     .eq('organization_id', orgId);
@@ -141,7 +155,7 @@ const Services = () => {
     const handleUpdateStock = async (productId: string, currentStock: number) => {
         try {
             const newStock = currentStock + 1;
-            const { error } = await (supabase as any)
+            const { error } = await sb
                 .from('products')
                 .update({ stock: newStock })
                 .eq('id', productId);
@@ -162,11 +176,15 @@ const Services = () => {
 
         try {
             // Get Org ID
-            const { data: profile } = await (supabase as any)
+            // Get Org ID
+            // Get Org ID
+            const { data: profileData } = await sb
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', user.id)
                 .single();
+
+            const profile = profileData as { organization_id: string | null } | null;
 
             if (!profile?.organization_id) return;
             const orgId = profile.organization_id;
@@ -182,7 +200,7 @@ const Services = () => {
                     image_url: 'bg-emerald-100 text-emerald-600' // Default color
                 };
 
-                const { data, error } = await (supabase as any)
+                const { data, error } = await sb
                     .from('services')
                     .insert([newService])
                     .select()
@@ -209,7 +227,7 @@ const Services = () => {
                     image_url: 'bg-blue-100 text-blue-600'
                 };
 
-                const { data, error } = await (supabase as any)
+                const { data, error } = await sb
                     .from('products')
                     .insert([newProduct])
                     .select()

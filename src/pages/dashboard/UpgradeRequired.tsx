@@ -9,7 +9,7 @@ const UpgradeRequired = () => {
     const plans = [
         {
             name: 'Solo',
-            price: '$29',
+            price: '$40',
             description: 'For the individual professional',
             icon: Zap,
             color: 'text-blue-500',
@@ -23,7 +23,7 @@ const UpgradeRequired = () => {
         },
         {
             name: 'Business',
-            price: '$99',
+            price: '$70',
             description: 'Scalable team management',
             icon: Star,
             color: 'text-[#de5c1b]',
