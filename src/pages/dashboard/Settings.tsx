@@ -15,7 +15,8 @@ import { useSidebar } from '../../contexts/SidebarContext';
 import Billing from '../../components/dashboard/settings/Billing';
 import TierUpgradeModal from '../../components/dashboard/settings/TierUpgradeModal';
 import type { Tier } from '../../contexts/AuthContext';
-import type { Database } from '../../types/supabase';
+// import type { Database } from '../../types/supabase';
+
 
 const Settings = () => {
     const { user, updateRole, updateTier, logout } = useAuth();
@@ -64,11 +65,13 @@ const Settings = () => {
             const { data: { user: currentUser } } = await supabase.auth.getUser();
             if (!currentUser) return;
 
-            const { data: profile } = await supabase
+            const { data: profileData } = await supabase
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', currentUser.id)
                 .single();
+
+            const profile = profileData as { organization_id: string } | null;
 
             if (!profile?.organization_id) return;
 
@@ -124,11 +127,13 @@ const Settings = () => {
             const { data: { user: currentUser } } = await supabase.auth.getUser();
             if (!currentUser) return;
 
-            const { data: profile } = await supabase
+            const { data: profileData } = await supabase
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', currentUser.id)
                 .single();
+
+            const profile = profileData as { organization_id: string } | null;
 
             if (profile?.organization_id) {
                 const { error } = await sb

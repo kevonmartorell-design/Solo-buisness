@@ -29,8 +29,10 @@ const PublicReview = () => {
                     .eq('id', orgId)
                     .single();
 
+                const orgData = data as { business_name: string } | null;
+
                 if (error) throw error;
-                setOrgName(data.business_name);
+                if (orgData) setOrgName(orgData.business_name);
             } catch (err) {
                 console.error(err);
             } finally {

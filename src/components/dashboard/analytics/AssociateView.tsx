@@ -24,7 +24,7 @@ const ASSOCIATE_GOALS = [
 const AssociateView = () => {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
-    const [earnings, setEarnings] = useState(0);
+    // const [earnings, setEarnings] = useState(0); 
     const [hourlyEarnings, setHourlyEarnings] = useState(0); // Mock for now or calc from timesheet
     const [commissionEarnings, setCommissionEarnings] = useState(0);
     const [recentCommissions, setRecentCommissions] = useState<any[]>([]);
@@ -61,7 +61,7 @@ const AssociateView = () => {
                     // Mock Commission Logic: 15% of service revenue
                     const estimatedCommission = totalServiceRevenue * 0.15;
 
-                    setEarnings(estimatedCommission); // Earnings = Commission for this view? Or Total?
+                    // setEarnings(estimatedCommission); // Earnings = Commission for this view? Or Total?
                     // Let's say "Estimated Earnings" = Commission + Hourly (mock hourly)
                     // If we don't have hourly data, let's just use commission for now + base
                     const mockBasePay = 600; // Base weekly pay

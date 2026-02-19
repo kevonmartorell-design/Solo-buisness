@@ -30,12 +30,18 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }: AddEmployeeModalProps)
         setError(null);
 
         try {
+            if (!user?.id) {
+                throw new Error('User not authenticated');
+            }
+
             // 1. Get current user's org ID
-            const { data: profile } = await supabase
+            const { data: profileData } = await supabase
                 .from('profiles')
                 .select('organization_id')
-                .eq('id', user?.id)
+                .eq('id', user.id)
                 .single();
+
+            const profile = profileData as { organization_id: string } | null;
 
             if (!profile?.organization_id) {
                 throw new Error('Organization not found');
@@ -64,7 +70,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }: AddEmployeeModalProps)
                     status: 'active',
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
-                });
+                } as any);
 
             if (insertError) {
                 // If the error is related to foreign key constraint on auth.users (likely),

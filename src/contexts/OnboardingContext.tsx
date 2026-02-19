@@ -306,7 +306,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
             const user = session.user;
 
             // 1. Create Organization
-            const { data: org, error: orgError } = await supabase
+            const { data: orgData, error: orgError } = await supabase
                 .from('organizations')
                 .insert({
                     business_name: data.businessName,
@@ -318,6 +318,8 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
                 .select()
                 .single();
 
+            const org = orgData as { id: string } | null;
+
             if (orgError) {
                 console.error('Error creating organization:', orgError);
                 throw new Error(`Failed to create organization: ${orgError.message}`);
@@ -325,7 +327,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
 
             // 2. Update Profile
             if (org) {
-                const { error: profileError } = await supabase
+                const { error: profileError } = await (supabase as any)
                     .from('profiles')
                     .update({
                         organization_id: org.id,

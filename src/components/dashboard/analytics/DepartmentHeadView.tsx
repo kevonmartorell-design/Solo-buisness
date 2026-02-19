@@ -26,11 +26,13 @@ const DepartmentHeadView = () => {
 
             try {
                 // 1. Get User's Dept & Org
-                const { data: profile } = await supabase
+                const { data: profileData } = await supabase
                     .from('profiles')
                     .select('organization_id, department')
                     .eq('id', user.id)
                     .single();
+
+                const profile = profileData as { organization_id: string; department: string } | null;
 
                 if (!profile?.organization_id) {
                     setLoading(false);
@@ -41,11 +43,13 @@ const DepartmentHeadView = () => {
                 setDeptName(dept);
 
                 // 2. Fetch Team Members in Dept (for Leaderboard)
-                const { data: teamMembers } = await supabase
+                const { data: teamMembersData } = await supabase
                     .from('profiles')
                     .select('id, name')
                     .eq('organization_id', profile.organization_id)
                     .eq('department', dept);
+
+                const teamMembers = teamMembersData as { id: string; name: string }[] | null;
 
                 // 3. Fetch Bookings for this Dept
                 // Since we don't have a direct department filter on bookings, we filter by employees in that dept
