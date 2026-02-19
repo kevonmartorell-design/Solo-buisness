@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAI } from '../../contexts/AIContext';
-import { useAuth } from '../../contexts/AuthContext';
 import {
     Brain,
     TrendingUp,
@@ -15,7 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AEGISAI = () => {
-    const { messages, sendMessage, loading, clearChat } = useAI();
+    const { messages, sendMessage, loading, clearChat, insights } = useAI();
     const [input, setInput] = useState('');
     const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -77,30 +76,41 @@ const AEGISAI = () => {
                                 <TrendingUp className="w-4 h-4" />
                                 <span className="text-xs font-bold uppercase">Growth Forecast</span>
                             </div>
-                            <p className="text-sm">Based on booking trends, your revenue is expected to grow by <span className="text-green-500 font-bold">12%</span> over the next 30 days.</p>
+                            <p className="text-sm">
+                                Based on booking trends, your revenue is {insights?.revenueTrend ? (insights.revenueTrend >= 0 ? 'growing' : 'declining') : 'analyzed'} by <span className={`${insights?.revenueTrend && insights.revenueTrend >= 0 ? 'text-green-500' : 'text-red-500'} font-bold`}>
+                                    {Math.abs(insights?.revenueTrend || 0)}%
+                                </span> over the last 30 days.
+                            </p>
                             <div className="h-1.5 w-full bg-gray-100 dark:bg-white/5 rounded-full overflow-hidden">
                                 <motion.div
                                     initial={{ width: 0 }}
-                                    animate={{ width: '75%' }}
-                                    className="h-full bg-green-500"
+                                    animate={{ width: `${Math.min(100, Math.max(0, 50 + (insights?.revenueTrend || 0)))}%` }}
+                                    className={`h-full ${insights?.revenueTrend && insights.revenueTrend >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
                                 />
                             </div>
                         </div>
 
                         <div className="p-5 bg-white dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/10 space-y-3">
-                            <div className="flex items-center gap-2 text-yellow-500">
+                            <div className={`flex items-center gap-2 ${(insights?.laborIssues || 0) > 0 ? 'text-red-500' : 'text-green-500'}`}>
                                 <AlertTriangle className="w-4 h-4" />
-                                <span className="text-xs font-bold uppercase">Labor Alert</span>
+                                <span className="text-xs font-bold uppercase">Labor Integrity</span>
                             </div>
-                            <p className="text-sm">You have high labor costs scheduled for Tuesday. AEGIS suggests reducing 1 shift to save <span className="font-bold underline">$150</span>.</p>
+                            <p className="text-sm">
+                                {(insights?.laborIssues || 0) > 0
+                                    ? `AEGIS detected ${insights?.laborIssues} shifts with low margins. Review pay rates to optimize profitability.`
+                                    : "Your labor costs are well-aligned with billing rates. No critical margin issues detected."
+                                }
+                            </p>
                         </div>
 
                         <div className="p-5 bg-white dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/10 space-y-3">
                             <div className="flex items-center gap-2 text-purple-500">
                                 <Zap className="w-4 h-4" />
-                                <span className="text-xs font-bold uppercase">Service Optimization</span>
+                                <span className="text-xs font-bold uppercase">Service Performance</span>
                             </div>
-                            <p className="text-sm">Your "Premium Massage" has the highest margin but lowest volume. Consider a targeted marketing push.</p>
+                            <p className="text-sm">
+                                Your most successful service is <span className="font-bold underline">"{insights?.topService || '...'}"</span>. It accounts for the majority of your recent volume.
+                            </p>
                         </div>
                     </div>
 

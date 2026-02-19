@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useBranding } from '../../contexts/BrandingContext';
 import { useVault } from '../../contexts/VaultContext';
 import { useState } from 'react';
+import Billing from '../../components/dashboard/settings/Billing';
 
 const Settings = () => {
     const { user, updateRole, updateTier, logout } = useAuth();
@@ -31,6 +32,7 @@ const Settings = () => {
     // Local state for new category
     const [newCatName, setNewCatName] = useState('');
     const [newCatColor, setNewCatColor] = useState('blue');
+    const [activeTab, setActiveTab] = useState<'general' | 'billing' | 'branding' | 'security'>('general');
 
     const handleAddCategory = () => {
         if (newCatName.trim()) {
@@ -137,62 +139,98 @@ const Settings = () => {
                 </section>
 
                 {/* Section: Subscription & Billing */}
+                {/* Section: Subscription & Billing */}
                 <section className="mt-8">
-                    <h2 className="px-6 text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em] mb-2">Subscription & Billing</h2>
-                    <div className="bg-white/5 dark:bg-white/5 mx-4 rounded-xl overflow-hidden border border-white/10 dark:border-white/10 border-gray-200">
-                        <div className="p-4 bg-white dark:bg-transparent">
-                            <div className="flex items-center justify-between mb-4">
-                                <div>
-                                    <p className="text-sm font-bold text-gray-700 dark:text-gray-200">Current Plan</p>
-                                    <p className="text-xs text-gray-500">Manage your subscription tier</p>
-                                </div>
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${user?.tier === 'Business' ? 'bg-[#de5c1b]/20 text-[#de5c1b]' :
-                                    user?.tier === 'Solo' ? 'bg-blue-500/20 text-blue-500' :
-                                        'bg-gray-500/20 text-gray-500'
-                                    }`}>
-                                    {user?.tier || 'Free'}
-                                </span>
-                            </div>
+                    <div className="flex items-center justify-between px-6 mb-2">
+                        <h2 className="text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em]">Subscription & Billing</h2>
+                        {user?.tier !== 'Free' && (
+                            <button
+                                onClick={() => setActiveTab(activeTab === 'billing' ? 'general' : 'billing')}
+                                className="text-[10px] font-bold text-[#de5c1b] uppercase hover:underline"
+                            >
+                                {activeTab === 'billing' ? 'Back to Settings' : 'Details'}
+                            </button>
+                        )}
+                    </div>
 
-                            <div className="grid grid-cols-3 gap-3">
-                                {[
-                                    {
-                                        name: 'Free',
-                                        price: '$0',
-                                        description: 'Client Access',
-                                        features: ['Browse Profiles', 'Request Bookings']
-                                    },
-                                    {
-                                        name: 'Solo',
-                                        price: '$40',
-                                        description: '1-10 Employees',
-                                        features: ['Schedule', 'Basic Analytics', 'Client CRM']
-                                    },
-                                    {
-                                        name: 'Business',
-                                        price: '$70',
-                                        description: 'Up to 30 Employees',
-                                        features: ['Full Branding', 'Adv. Analytics', 'Priority Support']
-                                    }
-                                ].map((plan) => (
-                                    <button
-                                        key={plan.name}
-                                        onClick={() => handleTierChange(plan.name as any)}
-                                        disabled={user?.tier === plan.name}
-                                        className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${user?.tier === plan.name
-                                            ? 'border-[#de5c1b] bg-[#de5c1b]/5 cursor-default'
-                                            : 'border-transparent bg-slate-50 dark:bg-white/5 hover:border-gray-300 dark:hover:border-white/20'
-                                            }`}
-                                    >
-                                        <span className={`text-xs font-bold ${user?.tier === plan.name ? 'text-[#de5c1b]' : 'text-gray-500'}`}>
-                                            {plan.name}
-                                        </span>
-                                        <span className="text-xl font-bold">{plan.price}<span className="text-[10px] font-normal text-gray-400">/mo</span></span>
-                                        <span className="text-[10px] text-gray-500 font-medium">{plan.description}</span>
-                                    </button>
-                                ))}
+                    <div className="mx-4">
+                        {activeTab === 'billing' ? (
+                            <Billing />
+                        ) : (
+                            <div className="bg-white/5 dark:bg-white/5 rounded-xl overflow-hidden border border-white/10 dark:border-white/10 border-gray-200">
+                                <div className="p-4 bg-white dark:bg-transparent">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-700 dark:text-gray-200">Current Plan</p>
+                                            <p className="text-xs text-gray-500">Manage your subscription tier</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${user?.tier === 'Business' ? 'bg-[#de5c1b]/20 text-[#de5c1b]' :
+                                                user?.tier === 'Solo' ? 'bg-blue-500/20 text-blue-500' :
+                                                    'bg-gray-500/20 text-gray-500'
+                                                }`}>
+                                                {user?.tier || 'Free'}
+                                            </span>
+                                            {user?.tier !== 'Free' && (
+                                                <button
+                                                    onClick={() => setActiveTab('billing')}
+                                                    className="p-1 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-gray-400"
+                                                >
+                                                    <ChevronRight className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        {[
+                                            {
+                                                name: 'Free',
+                                                price: '$0',
+                                                description: 'Basic',
+                                                features: []
+                                            },
+                                            {
+                                                name: 'Solo',
+                                                price: '$40',
+                                                description: 'Standard',
+                                                features: []
+                                            },
+                                            {
+                                                name: 'Business',
+                                                price: '$70',
+                                                description: 'Pro',
+                                                features: []
+                                            }
+                                        ].map((plan) => (
+                                            <button
+                                                key={plan.name}
+                                                onClick={() => handleTierChange(plan.name as any)}
+                                                disabled={user?.tier === plan.name}
+                                                className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${user?.tier === plan.name
+                                                    ? 'border-[#de5c1b] bg-[#de5c1b]/5 cursor-default'
+                                                    : 'border-transparent bg-slate-50 dark:bg-white/5 hover:border-gray-300 dark:hover:border-white/20'
+                                                    }`}
+                                            >
+                                                <span className={`text-[10px] font-bold uppercase tracking-wider ${user?.tier === plan.name ? 'text-[#de5c1b]' : 'text-gray-500'}`}>
+                                                    {plan.name}
+                                                </span>
+                                                <span className="text-lg font-bold">{plan.price}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {user?.tier !== 'Free' && (
+                                        <button
+                                            onClick={() => setActiveTab('billing')}
+                                            className="w-full mt-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-lg text-xs font-bold text-gray-500 hover:text-[#de5c1b] transition-colors"
+                                        >
+                                            Manage Payment Method & Invoices
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </section>
 

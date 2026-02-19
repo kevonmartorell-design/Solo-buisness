@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 
@@ -14,6 +14,16 @@ interface AIContextType {
     sendMessage: (content: string) => Promise<void>;
     loading: boolean;
     clearChat: () => void;
+    insights: {
+        revenue: number;
+        profit: number;
+        expenses: number;
+        revenueTrend: number;
+        laborIssues: number;
+        topService: string;
+        employeeCount: number;
+        businessName: string;
+    } | null;
 }
 
 const AIContext = createContext<AIContextType | undefined>(undefined);
@@ -22,6 +32,12 @@ export const AIProvider = ({ children }: { children: ReactNode }) => {
     const { user } = useAuth();
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(false);
+    const [insights, setInsights] = useState<AIContextType['insights']>(null);
+
+    // Load insights on mount
+    useEffect(() => {
+        fetchBusinessContext().then(setInsights);
+    }, [user]);
 
     const sendMessage = async (content: string) => {
         if (!content.trim()) return;
@@ -73,29 +89,83 @@ export const AIProvider = ({ children }: { children: ReactNode }) => {
 
             const orgId = profile.organization_id;
 
-            // Fetch summary stats
+            // 1. Fetch Organization Details
+            const { data: org } = await (supabase as any)
+                .from('organizations')
+                .select('name')
+                .eq('id', orgId)
+                .single();
+
+            // 2. Fetch Employee Count
+            const { count: empCount } = await (supabase as any)
+                .from('profiles')
+                .select('*', { count: 'exact', head: true })
+                .eq('organization_id', orgId);
+
+            // 3. Revenue Trends (Last 30 days vs Prior 30 days)
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+            const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+
+            const { data: recentBookings } = await (supabase as any)
+                .from('bookings')
+                .select('service:services(price)')
+                .eq('organization_id', orgId)
+                .eq('status', 'completed')
+                .gte('created_at', thirtyDaysAgo);
+
+            const { data: priorBookings } = await (supabase as any)
+                .from('bookings')
+                .select('service:services(price)')
+                .eq('organization_id', orgId)
+                .eq('status', 'completed')
+                .gte('created_at', sixtyDaysAgo)
+                .lt('created_at', thirtyDaysAgo);
+
+            const recentRevenue = recentBookings?.reduce((sum: number, b: any) => sum + (Number(b.service?.price) || 0), 0) || 0;
+            const priorRevenue = priorBookings?.reduce((sum: number, b: any) => sum + (Number(b.service?.price) || 0), 0) || 0;
+            const revenueTrend = priorRevenue === 0 ? 0 : ((recentRevenue - priorRevenue) / priorRevenue) * 100;
+
+            // 4. Labor Issues (Shifts with low margin)
+            const { data: riskyShifts } = await (supabase as any)
+                .from('shifts')
+                .select('pay_rate, bill_rate')
+                .eq('organization_id', orgId)
+                .lt('bill_rate', 'pay_rate * 1.5'); // Flag if margin is less than 50%
+
+            // 5. Total Expenses
             const { data: expenses } = await (supabase as any)
                 .from('expenses')
                 .select('amount')
                 .eq('organization_id', orgId);
 
-            const { data: bookings } = await (supabase as any)
+            // 6. Top Service
+            const { data: serviceStats } = await (supabase as any)
                 .from('bookings')
-                .select('service:services(price)')
+                .select('service:services(name)')
                 .eq('organization_id', orgId)
                 .eq('status', 'completed');
 
+            const serviceCounts: Record<string, number> = {};
+            serviceStats?.forEach((b: any) => {
+                const name = b.service?.name || 'Unknown';
+                serviceCounts[name] = (serviceCounts[name] || 0) + 1;
+            });
+            const topService = Object.entries(serviceCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None';
+
             const totalExpenses = expenses?.reduce((sum: number, e: any) => sum + Number(e.amount), 0) || 0;
-            const totalRevenue = bookings?.reduce((sum: number, b: any) => sum + (Number(b.service?.price) || 0), 0) || 0;
 
             return {
-                revenue: totalRevenue,
+                revenue: recentRevenue,
                 expenses: totalExpenses,
-                profit: totalRevenue - totalExpenses,
-                employeeCount: 0, // Mock for now
-                businessName: 'Your Business'
+                profit: recentRevenue - totalExpenses,
+                revenueTrend: Math.round(revenueTrend),
+                laborIssues: riskyShifts?.length || 0,
+                topService,
+                employeeCount: empCount || 0,
+                businessName: org?.name || 'Your Business'
             };
         } catch (e) {
+            console.error('Error fetching business context:', e);
             return null;
         }
     };
@@ -117,7 +187,7 @@ export const AIProvider = ({ children }: { children: ReactNode }) => {
     const clearChat = () => setMessages([]);
 
     return (
-        <AIContext.Provider value={{ messages, sendMessage, loading, clearChat }}>
+        <AIContext.Provider value={{ messages, sendMessage, loading, clearChat, insights }}>
             {children}
         </AIContext.Provider>
     );
