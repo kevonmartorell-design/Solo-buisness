@@ -28,6 +28,8 @@ interface BrandingContextType {
     setSmsSenderId: (id: string) => void;
     showPoweredBy: boolean;
     setShowPoweredBy: (show: boolean) => void;
+    theme: 'light' | 'dark' | 'system';
+    setTheme: (theme: 'light' | 'dark' | 'system') => void;
     resetBranding: () => void;
     saveBranding: () => Promise<boolean>;
 }
@@ -53,6 +55,7 @@ export const BrandingProvider = ({ children }: { children: ReactNode }) => {
     const [smtpSettings, setSmtpSettings] = useState<SmtpSettings>({ host: '', port: '', user: '', pass: '' });
     const [smsSenderId, setSmsSenderId] = useState('');
     const [showPoweredBy, setShowPoweredBy] = useState(true);
+    const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system');
 
     // CSS Variable Update Effect
     useEffect(() => {
@@ -65,7 +68,19 @@ export const BrandingProvider = ({ children }: { children: ReactNode }) => {
         if (rgb) {
             root.style.setProperty('--color-primary-rgb', rgb);
         }
-    }, [primaryColor, secondaryColor, font]);
+
+        // Theme handling
+        const applyTheme = (themeValue: 'light' | 'dark' | 'system') => {
+            const isDark = themeValue === 'dark' || (themeValue === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) {
+                root.classList.add('dark');
+            } else {
+                root.classList.remove('dark');
+            }
+        };
+
+        applyTheme(theme);
+    }, [primaryColor, secondaryColor, font, theme]);
 
     // Load from Supabase on Mount/User Change
     useEffect(() => {
@@ -102,6 +117,7 @@ export const BrandingProvider = ({ children }: { children: ReactNode }) => {
                         if (settings.smtpSettings) setSmtpSettings(settings.smtpSettings);
                         if (settings.smsSenderId) setSmsSenderId(settings.smsSenderId);
                         if (settings.showPoweredBy !== undefined) setShowPoweredBy(settings.showPoweredBy);
+                        if (settings.theme) setTheme(settings.theme);
                     }
                 }
             } catch (error) {
@@ -131,7 +147,8 @@ export const BrandingProvider = ({ children }: { children: ReactNode }) => {
                 customDomain,
                 smtpSettings,
                 smsSenderId,
-                showPoweredBy
+                showPoweredBy,
+                theme
             };
 
             const { error } = await (supabase as any)
@@ -173,6 +190,7 @@ export const BrandingProvider = ({ children }: { children: ReactNode }) => {
             smtpSettings, setSmtpSettings,
             smsSenderId, setSmsSenderId,
             showPoweredBy, setShowPoweredBy,
+            theme, setTheme,
             resetBranding,
             saveBranding
         }}>

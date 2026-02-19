@@ -17,6 +17,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useVault } from '../../contexts/VaultContext';
+import { useSidebar } from '../../contexts/SidebarContext';
 import type { Database } from '../../types/supabase';
 
 // Define types derived from Supabase
@@ -44,7 +45,9 @@ const Services = () => {
     const [loading, setLoading] = useState(true);
 
     // Search & Filter State
+    const { toggleSidebar } = useSidebar();
     const [searchTerm, setSearchTerm] = useState('');
+    const [isSearchVisible, setIsSearchVisible] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Form State
@@ -134,6 +137,25 @@ const Services = () => {
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase()))
     );
+
+    const handleUpdateStock = async (productId: string, currentStock: number) => {
+        try {
+            const newStock = currentStock + 1;
+            const { error } = await (supabase as any)
+                .from('products')
+                .update({ stock: newStock })
+                .eq('id', productId);
+
+            if (error) throw error;
+
+            setLocalProducts(prev => prev.map(p =>
+                p.id === productId ? { ...p, stock: newStock } : p
+            ));
+        } catch (error) {
+            console.error('Error updating stock:', error);
+            alert('Failed to update stock');
+        }
+    };
 
     const handleAddItem = async () => {
         if (!newItemName || !newItemPrice || !user) return;
@@ -260,13 +282,29 @@ const Services = () => {
             <header className="sticky top-0 z-50 bg-white/80 dark:bg-[#211611]/80 backdrop-blur-md border-b border-[#de5c1b]/10">
                 <div className="flex items-center p-4 justify-between max-w-5xl mx-auto w-full">
                     <div className="flex items-center gap-4">
-                        <div className="text-[#de5c1b] cursor-pointer">
+                        <div
+                            onClick={toggleSidebar}
+                            className="text-[#de5c1b] cursor-pointer"
+                        >
                             <Menu className="w-6 h-6" />
                         </div>
                         <h1 className="text-xl font-bold tracking-tight">Catalog: {industry}</h1>
                     </div>
                     <div className="flex items-center gap-3">
-                        <button className="p-2 rounded-lg hover:bg-[#de5c1b]/10 transition-colors text-[#de5c1b]">
+                        {isSearchVisible && (
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Search catalog..."
+                                className="bg-[#de5c1b]/5 border border-[#de5c1b]/20 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-[#de5c1b] outline-none w-32 md:w-48 transition-all"
+                                autoFocus
+                            />
+                        )}
+                        <button
+                            onClick={() => setIsSearchVisible(!isSearchVisible)}
+                            className="p-2 rounded-lg hover:bg-[#de5c1b]/10 transition-colors text-[#de5c1b]"
+                        >
                             <Search className="w-6 h-6" />
                         </button>
                         <button className="p-2 rounded-lg hover:bg-[#de5c1b]/10 transition-colors text-[#de5c1b]">
@@ -375,7 +413,10 @@ const Services = () => {
                                     <p className="text-xs text-slate-500 mb-2">{product.category}</p>
                                     <div className="flex items-center justify-between mt-auto pt-3 border-t border-[#de5c1b]/10">
                                         <span className="text-xs font-medium text-slate-400">Stock: <span className={product.stock <= product.reorder_point ? 'text-red-500 font-bold' : 'text-slate-700 dark:text-slate-200'}>{product.stock}</span></span>
-                                        <button className="text-[#de5c1b] hover:bg-[#de5c1b]/10 p-1.5 rounded-lg transition-colors">
+                                        <button
+                                            onClick={() => handleUpdateStock(product.id, product.stock)}
+                                            className="text-[#de5c1b] hover:bg-[#de5c1b]/10 p-1.5 rounded-lg transition-colors"
+                                        >
                                             <Plus className="w-4 h-4" />
                                         </button>
                                     </div>

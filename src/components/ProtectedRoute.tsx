@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, type Role, type Tier } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, allowedRoles, allowedTiers }: ProtectedRouteProps) => {
     const { user, hasPermission } = useAuth();
+    const location = useLocation();
 
     if (!user) {
         return <Navigate to="/login" replace />;
@@ -19,7 +20,7 @@ const ProtectedRoute = ({ children, allowedRoles, allowedTiers }: ProtectedRoute
     }
 
     if (allowedTiers && !allowedTiers.includes(user.tier)) {
-        return <Navigate to="/dashboard" replace />;
+        return <Navigate to="/upgrade-required" state={{ from: location }} replace />;
     }
 
     // New: Check for onboarding completion

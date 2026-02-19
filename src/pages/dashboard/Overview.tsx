@@ -148,6 +148,25 @@ const Overview = () => {
                     user: 'System'
                 }));
 
+                // Daily Revenue for Chart (Last 7 Days)
+                const last7Days: Record<string, number> = {};
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    last7Days[d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })] = 0;
+                }
+
+                confirmedBookings.forEach(booking => {
+                    const bDate = new Date(booking.booking_datetime);
+                    const label = bDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    if (last7Days[label] !== undefined) {
+                        const price = Array.isArray(booking.service) ? booking.service[0]?.price : booking.service?.price;
+                        last7Days[label] += (Number(price) || 0);
+                    }
+                });
+
+                const dailyRevenue = Object.entries(last7Days).map(([name, value]) => ({ name, value }));
+
                 setStats({
                     revenue: totalRevenue,
                     expenses: totalExpenses,
@@ -155,7 +174,7 @@ const Overview = () => {
                     activeCount: totalBookings,
                     efficiency: retentionRate,
                     recentActivity: formattedActivity,
-                    dailyRevenue: [],
+                    dailyRevenue: dailyRevenue,
                     bestClient: bestClient ? `${bestClient.name} ($${bestClient.spend})` : 'No clients yet',
                     retention: `${retentionRate}%`
                 });
@@ -200,6 +219,7 @@ const Overview = () => {
                     trendUp={true}
                     icon="calendar_month"
                     delay={0.1}
+                    path="/schedule"
                 />
                 <MetricCard
                     title="Total Revenue"
@@ -208,6 +228,7 @@ const Overview = () => {
                     trendUp={true}
                     icon="payments"
                     delay={0.2}
+                    path="/financials"
                 />
                 <MetricCard
                     title="Best Client"
@@ -216,6 +237,7 @@ const Overview = () => {
                     trendUp={true}
                     icon="person_celebrate"
                     delay={0.3}
+                    path="/clients"
                 />
                 <MetricCard
                     title="Net Profit"
@@ -224,6 +246,7 @@ const Overview = () => {
                     trendUp={stats.netProfit >= 0}
                     icon="savings"
                     delay={0.4}
+                    path="/financials"
                 />
             </div>
 

@@ -221,8 +221,22 @@ const Vault = () => {
                                         <h3 className="font-bold text-slate-900 dark:text-white">{doc.name}</h3>
                                         <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-medium">Expires in {getDaysUntilExpiry(doc.expiryDate)} days</p>
                                         <div className="mt-3 flex gap-3">
-                                            <button className="text-xs font-bold bg-white dark:bg-[#211611] text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 shadow-sm hover:bg-slate-50 dark:hover:bg-white/5">Details</button>
-                                            <button className="text-xs font-bold bg-[#de5c1b] text-white px-3 py-1.5 rounded-lg shadow-md shadow-[#de5c1b]/20 hover:bg-[#de5c1b]/90">Renew Now</button>
+                                            <button
+                                                onClick={() => handleView(doc)}
+                                                className="text-xs font-bold bg-white dark:bg-[#211611] text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 shadow-sm hover:bg-slate-50 dark:hover:bg-white/5"
+                                            >
+                                                Details
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    setUploadType(doc.type);
+                                                    setUploadCategory(doc.category);
+                                                    setIsUploadModalOpen(true);
+                                                }}
+                                                className="text-xs font-bold bg-[#de5c1b] text-white px-3 py-1.5 rounded-lg shadow-md shadow-[#de5c1b]/20 hover:bg-[#de5c1b]/90"
+                                            >
+                                                Renew Now
+                                            </button>
                                         </div>
                                     </div>
                                 </div>

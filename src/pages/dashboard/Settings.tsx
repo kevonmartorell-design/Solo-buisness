@@ -3,14 +3,17 @@ import {
     Menu, Bell, Mail, Landmark, CreditCard, ChevronRight, PlusCircle,
     Sun, Moon, Monitor, Fingerprint, ShieldCheck, Palette, Upload,
     Type, Briefcase, Plus, Trash2, Globe, Smartphone, Server, FileText,
-    Users, Download, ToggleRight, Power
+    Users, Download, ToggleRight, Power, Shield, Zap, Star
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBranding } from '../../contexts/BrandingContext';
 import { useVault } from '../../contexts/VaultContext';
 import { useState } from 'react';
+import { useSidebar } from '../../contexts/SidebarContext';
 import Billing from '../../components/dashboard/settings/Billing';
+import TierUpgradeModal from '../../components/dashboard/settings/TierUpgradeModal';
+import type { Tier } from '../../contexts/AuthContext';
 
 const Settings = () => {
     const { user, updateRole, updateTier, logout } = useAuth();
@@ -24,6 +27,7 @@ const Settings = () => {
         smtpSettings, setSmtpSettings,
         smsSenderId, setSmsSenderId,
         showPoweredBy, setShowPoweredBy,
+        theme, setTheme,
         resetBranding,
         saveBranding
     } = useBranding();
@@ -33,6 +37,13 @@ const Settings = () => {
     const [newCatName, setNewCatName] = useState('');
     const [newCatColor, setNewCatColor] = useState('blue');
     const [activeTab, setActiveTab] = useState<'general' | 'billing' | 'branding' | 'security'>('general');
+
+    // Sidebar
+    const { toggleSidebar } = useSidebar();
+
+    // Tier Upgrade Modal State
+    const [isTierModalOpen, setIsTierModalOpen] = useState(false);
+    const [pendingTier, setPendingTier] = useState<Tier | null>(null);
 
     const handleAddCategory = () => {
         if (newCatName.trim()) {
@@ -45,36 +56,92 @@ const Settings = () => {
         }
     };
 
-    const handleTierChange = async (newTier: 'Free' | 'Solo' | 'Business') => {
-        if (!user) return;
-        const confirmMessage = `Are you sure you want to switch to the ${newTier} plan?`;
+    const handleExportClients = async () => {
+        try {
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            if (!currentUser) return;
 
-        if (window.confirm(confirmMessage)) {
-            try {
-                const { data: { user: currentUser } } = await supabase.auth.getUser();
-                if (!currentUser) return;
+            const { data: profile } = await (supabase as any)
+                .from('profiles')
+                .select('organization_id')
+                .eq('id', currentUser.id)
+                .single();
 
-                const { data: profile } = await (supabase as any)
-                    .from('profiles')
-                    .select('organization_id')
-                    .eq('id', currentUser.id)
-                    .single();
+            if (!profile?.organization_id) return;
 
-                if (profile?.organization_id) {
-                    const { error } = await (supabase as any)
-                        .from('organizations')
-                        .update({ tier: newTier.toLowerCase() })
-                        .eq('id', profile.organization_id);
+            const { data: clients, error } = await (supabase as any)
+                .from('clients')
+                .select('*')
+                .eq('organization_id', profile.organization_id);
 
-                    if (error) throw error;
-
-                    updateTier(newTier);
-                    alert(`Successfully switched to ${newTier} plan!`);
-                }
-            } catch (err) {
-                console.error('Error updating tier:', err);
-                alert('Failed to update tier. Please try again.');
+            if (error) throw error;
+            if (!clients || clients.length === 0) {
+                alert('No clients to export.');
+                return;
             }
+
+            // Generate CSV
+            const headers = ['Name', 'Email', 'Phone', 'Address', 'Join Date'];
+            const rows = clients.map((c: any) => [
+                c.name || 'N/A',
+                c.contact_info?.email || 'N/A',
+                c.contact_info?.phone || 'N/A',
+                c.contact_info?.address || 'N/A',
+                new Date(c.created_at).toLocaleDateString()
+            ]);
+
+            const csvContent = [
+                headers.join(','),
+                ...rows.map((r: string[]) => r.map((field: string) => `"${field}"`).join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `clients_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            console.error('Error exporting clients:', err);
+            alert('Failed to export clients.');
+        }
+    };
+
+    const handleTierChange = (newTier: Tier) => {
+        if (!user || user.tier === newTier) return;
+        setPendingTier(newTier);
+        setIsTierModalOpen(true);
+    };
+
+    const confirmTierChange = async (newTier: Tier) => {
+        try {
+            const { data: { user: currentUser } } = await supabase.auth.getUser();
+            if (!currentUser) return;
+
+            const { data: profile } = await (supabase as any)
+                .from('profiles')
+                .select('organization_id')
+                .eq('id', currentUser.id)
+                .single();
+
+            if (profile?.organization_id) {
+                const { error } = await (supabase as any)
+                    .from('organizations')
+                    .update({ tier: newTier.toLowerCase() })
+                    .eq('id', profile.organization_id);
+
+                if (error) throw error;
+
+                updateTier(newTier);
+                setIsTierModalOpen(false);
+                setPendingTier(null);
+            }
+        } catch (err) {
+            console.error('Error updating tier:', err);
+            alert('Failed to update tier. Please try again.');
         }
     };
     return (
@@ -82,7 +149,12 @@ const Settings = () => {
             {/* Header */}
             <header className="sticky top-0 z-10 bg-[#f8f6f6]/80 dark:bg-[#211611]/80 backdrop-blur-md border-b border-[#de5c1b]/10 px-4 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <button className="text-gray-500 hover:text-[#de5c1b] transition-colors"><Menu className="w-6 h-6" /></button>
+                    <button
+                        onClick={toggleSidebar}
+                        className="text-gray-500 hover:text-[#de5c1b] transition-colors"
+                    >
+                        <Menu className="w-6 h-6" />
+                    </button>
                     <h1 className="text-xl font-bold tracking-tight">ENGINE ROOM</h1>
                 </div>
                 <button className="bg-[#de5c1b]/10 text-[#de5c1b] px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
@@ -187,35 +259,47 @@ const Settings = () => {
                                             {
                                                 name: 'Free',
                                                 price: '$0',
-                                                description: 'Basic',
-                                                features: []
+                                                description: 'Essentials',
+                                                icon: Shield,
+                                                color: 'text-gray-400'
                                             },
                                             {
                                                 name: 'Solo',
-                                                price: '$40',
-                                                description: 'Standard',
-                                                features: []
+                                                price: '$29',
+                                                description: 'Professional',
+                                                icon: Zap,
+                                                color: 'text-blue-500'
                                             },
                                             {
                                                 name: 'Business',
-                                                price: '$70',
-                                                description: 'Pro',
-                                                features: []
+                                                price: '$99',
+                                                description: 'Enterprise',
+                                                icon: Star,
+                                                color: 'text-[#de5c1b]'
                                             }
                                         ].map((plan) => (
                                             <button
                                                 key={plan.name}
                                                 onClick={() => handleTierChange(plan.name as any)}
-                                                disabled={user?.tier === plan.name}
-                                                className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all ${user?.tier === plan.name
-                                                    ? 'border-[#de5c1b] bg-[#de5c1b]/5 cursor-default'
-                                                    : 'border-transparent bg-slate-50 dark:bg-white/5 hover:border-gray-300 dark:hover:border-white/20'
+                                                className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all relative overflow-hidden group ${user?.tier === plan.name
+                                                    ? 'border-[#de5c1b] bg-[#de5c1b]/5 shadow-sm ring-4 ring-[#de5c1b]/5'
+                                                    : 'border-gray-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 hover:border-[#de5c1b]/30'
                                                     }`}
                                             >
-                                                <span className={`text-[10px] font-bold uppercase tracking-wider ${user?.tier === plan.name ? 'text-[#de5c1b]' : 'text-gray-500'}`}>
-                                                    {plan.name}
-                                                </span>
-                                                <span className="text-lg font-bold">{plan.price}</span>
+                                                <div className={`p-2 rounded-lg bg-white dark:bg-[#1c1917] shadow-sm ${plan.color}`}>
+                                                    <plan.icon className="w-5 h-5" />
+                                                </div>
+                                                <div className="text-center">
+                                                    <span className={`text-[10px] font-black uppercase tracking-widest block ${user?.tier === plan.name ? 'text-[#de5c1b]' : 'text-gray-400'}`}>
+                                                        {plan.name}
+                                                    </span>
+                                                    <span className="text-xl font-black text-gray-900 dark:text-white">{plan.price}</span>
+                                                </div>
+                                                {user?.tier === plan.name && (
+                                                    <div className="absolute top-2 right-2">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#de5c1b] animate-pulse" />
+                                                    </div>
+                                                )}
                                             </button>
                                         ))}
                                     </div>
@@ -223,9 +307,9 @@ const Settings = () => {
                                     {user?.tier !== 'Free' && (
                                         <button
                                             onClick={() => setActiveTab('billing')}
-                                            className="w-full mt-4 py-2 bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-lg text-xs font-bold text-gray-500 hover:text-[#de5c1b] transition-colors"
+                                            className="w-full mt-6 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-lg shadow-gray-200 dark:shadow-none hover:scale-[1.01] active:scale-[0.98] transition-all"
                                         >
-                                            Manage Payment Method & Invoices
+                                            Manage Payment & Billing
                                         </button>
                                     )}
                                 </div>
@@ -266,25 +350,50 @@ const Settings = () => {
                 </section>
 
                 {/* Section: Appearance */}
-                {user?.tier === 'Business' && (
-                    <section className="mt-8">
-                        <h2 className="px-6 text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em] mb-2">App Theme</h2>
-                        <div className="px-4 grid grid-cols-3 gap-3">
-                            <div className="bg-white dark:bg-white/10 border-2 border-transparent p-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer hover:border-[#de5c1b]/50 transition-all shadow-sm">
-                                <Sun className="text-gray-400 w-8 h-8" />
-                                <span className="text-xs font-medium">Light</span>
-                            </div>
-                            <div className="bg-white/5 dark:bg-[#de5c1b]/20 border-2 border-[#de5c1b] p-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer transition-all shadow-sm">
-                                <Moon className="text-[#de5c1b] w-8 h-8" />
-                                <span className="text-xs font-bold text-[#de5c1b]">Dark</span>
-                            </div>
-                            <div className="bg-white dark:bg-white/10 border-2 border-transparent p-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer hover:border-[#de5c1b]/50 transition-all shadow-sm">
-                                <Monitor className="text-gray-400 w-8 h-8" />
-                                <span className="text-xs font-medium">System</span>
-                            </div>
+                <section className="mt-8">
+                    <h2 className="px-6 text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em] mb-2">App Theme</h2>
+                    <div className="px-4 grid grid-cols-3 gap-3">
+                        <div
+                            onClick={() => setTheme('light')}
+                            className={`p-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer transition-all shadow-sm border-2 ${theme === 'light' ? 'bg-[#de5c1b]/10 border-[#de5c1b]' : 'bg-white dark:bg-white/10 border-transparent hover:border-[#de5c1b]/50'}`}
+                        >
+                            <Sun className={`w-8 h-8 ${theme === 'light' ? 'text-[#de5c1b]' : 'text-gray-400'}`} />
+                            <span className={`text-xs ${theme === 'light' ? 'font-bold text-[#de5c1b]' : 'font-medium'}`}>Light</span>
                         </div>
-                    </section>
-                )}
+                        <div
+                            onClick={() => {
+                                if (user?.tier === 'Free') {
+                                    handleTierChange('Solo');
+                                } else {
+                                    setTheme('dark');
+                                }
+                            }}
+                            className={`p-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer transition-all shadow-sm border-2 relative ${theme === 'dark' ? 'bg-[#de5c1b]/10 border-[#de5c1b]' : 'bg-white dark:bg-white/10 border-transparent hover:border-[#de5c1b]/50'}`}
+                        >
+                            <Moon className={`w-8 h-8 ${theme === 'dark' ? 'text-[#de5c1b]' : 'text-gray-400'}`} />
+                            <span className={`text-xs ${theme === 'dark' ? 'font-bold text-[#de5c1b]' : 'font-medium'}`}>Dark</span>
+                            {user?.tier === 'Free' && (
+                                <Star className="absolute top-1 right-1 w-3 h-3 text-[#de5c1b]" />
+                            )}
+                        </div>
+                        <div
+                            onClick={() => {
+                                if (user?.tier === 'Free') {
+                                    handleTierChange('Solo');
+                                } else {
+                                    setTheme('system');
+                                }
+                            }}
+                            className={`p-3 rounded-xl flex flex-col items-center gap-2 cursor-pointer transition-all shadow-sm border-2 relative ${theme === 'system' ? 'bg-[#de5c1b]/10 border-[#de5c1b]' : 'bg-white dark:bg-white/10 border-transparent hover:border-[#de5c1b]/50'}`}
+                        >
+                            <Monitor className={`w-8 h-8 ${theme === 'system' ? 'text-[#de5c1b]' : 'text-gray-400'}`} />
+                            <span className={`text-xs ${theme === 'system' ? 'font-bold text-[#de5c1b]' : 'font-medium'}`}>System</span>
+                            {user?.tier === 'Free' && (
+                                <Star className="absolute top-1 right-1 w-3 h-3 text-[#de5c1b]" />
+                            )}
+                        </div>
+                    </div>
+                </section>
 
                 {/* Section: Security */}
                 <section className="mt-8">
@@ -668,7 +777,10 @@ const Settings = () => {
 
                         {/* Data Export */}
                         <div className="pt-2">
-                            <button className="w-full flex items-center justify-center gap-2 py-2 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-bold text-slate-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                            <button
+                                onClick={handleExportClients}
+                                className="w-full flex items-center justify-center gap-2 py-2 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-bold text-slate-700 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                            >
                                 <Download className="w-4 h-4" /> Export Client Database (CSV)
                             </button>
                         </div>
@@ -748,6 +860,20 @@ const Settings = () => {
                     </p>
                 </div>
             </main>
+
+            {/* Tier Upgrade Modal */}
+            {pendingTier && (
+                <TierUpgradeModal
+                    isOpen={isTierModalOpen}
+                    onClose={() => {
+                        setIsTierModalOpen(false);
+                        setPendingTier(null);
+                    }}
+                    onConfirm={confirmTierChange}
+                    currentTier={user?.tier || 'Free'}
+                    targetTier={pendingTier}
+                />
+            )}
         </div>
     );
 };

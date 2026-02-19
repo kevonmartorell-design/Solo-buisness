@@ -18,6 +18,8 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useVault } from '../../contexts/VaultContext';
+import { useSidebar } from '../../contexts/SidebarContext';
+import { useNavigate } from 'react-router-dom';
 
 // Define Client interface here since we removed the mock file import
 interface Client {
@@ -54,6 +56,8 @@ const Clients = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
     const { user } = useAuth(); // Get user from context
+    const { toggleSidebar } = useSidebar();
+    const navigate = useNavigate();
 
     // Load clients from Supabase
     useEffect(() => {
@@ -91,11 +95,12 @@ const Clients = () => {
                         email, 
                         phone, 
                         status, 
+                        notes,
                         created_at,
                         bookings (
                             id,
                             booking_datetime,
-                            service:services (price)
+                            service:services (name, price)
                         )
                     `)
                     .eq('organization_id', orgId);
@@ -114,9 +119,40 @@ const Clients = () => {
                     );
                     const lastVisit = sortedBookings.length > 0 ? sortedBookings[0].booking_datetime : c.created_at;
 
-                    // Determine Loyalty Tier (Simple Logic)
+                    // AI Insights Generation Logic
+                    const insights: string[] = [];
+                    const lastVisitDate = new Date(lastVisit);
+                    const daysSinceLastVisit = Math.floor((new Date().getTime() - lastVisitDate.getTime()) / (1000 * 60 * 60 * 24));
+
+                    if (daysSinceLastVisit > 45) {
+                        insights.push("Client hasn't visited in 45+ days. High risk of churn.");
+                    } else if (daysSinceLastVisit < 7 && visitCount > 5) {
+                        insights.push("Highly engaged client. Recently visited.");
+                    }
+
+                    if (totalSpend > 2000) {
+                        insights.push("Top 1% spender. Priority VIP handling recommended.");
+                    }
+
+                    const servicesFrequency: Record<string, number> = {};
+                    bookings.forEach((b: any) => {
+                        const sName = b.service?.name || 'Unknown';
+                        servicesFrequency[sName] = (servicesFrequency[sName] || 0) + 1;
+                    });
+
+                    const favoriteService = Object.entries(servicesFrequency).sort((a, b) => b[1] - a[1])[0]?.[0];
+                    if (favoriteService) {
+                        insights.push(`Strong preference for ${favoriteService}.`);
+                    }
+
+                    if (visitCount === 1) {
+                        insights.push("First-time client. Follow-up for retention recommended.");
+                    }
+
+                    // Determine Loyalty Tier
                     let loyaltyTier = 'New';
-                    if (visitCount > 10 || totalSpend > 1000) loyaltyTier = 'VIP';
+                    if (visitCount > 15 || totalSpend > 2500) loyaltyTier = 'Platinum';
+                    else if (visitCount > 8 || totalSpend > 1200) loyaltyTier = 'VIP';
                     else if (visitCount > 3) loyaltyTier = 'Regular';
 
                     return {
@@ -127,23 +163,25 @@ const Clients = () => {
                             email: c.email || 'N/A',
                             phone: c.phone || 'N/A'
                         },
-                        status: c.status || 'Active',
+                        status: daysSinceLastVisit > 60 ? 'At Risk' : (c.status || 'Active'),
                         loyaltyTier,
-                        avatarColor: 'bg-emerald-100 text-emerald-600',
+                        avatarColor: loyaltyTier === 'Platinum' ? 'bg-amber-100 text-amber-600' :
+                            loyaltyTier === 'VIP' ? 'bg-purple-100 text-purple-600' :
+                                'bg-emerald-100 text-emerald-600',
                         stats: {
                             totalSpend,
                             visitCount,
                             lastVisit
                         },
-                        aiInsights: [],
-                        privateNotes: '',
+                        aiInsights: insights.length > 0 ? insights : ["Stable client history. No immediate actions needed."],
+                        privateNotes: c.notes || 'No private notes available.',
                         preferences: { likes: [], dislikes: [] },
                         history: sortedBookings.map((b: any) => ({
                             id: b.id,
                             date: b.booking_datetime,
                             serviceName: b.service?.name || 'Service',
                             price: b.service?.price || 0,
-                            technician: 'Staff' // Placeholder
+                            technician: 'Staff'
                         }))
                     };
                 });
@@ -204,7 +242,10 @@ const Clients = () => {
             <header className="sticky top-0 z-20 bg-white/80 dark:bg-[#211611]/80 backdrop-blur-md border-b border-[#de5c1b]/10 px-4 py-4">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                        <button className="text-[#de5c1b] hover:bg-[#de5c1b]/10 p-1 rounded-lg transition-colors">
+                        <button
+                            onClick={toggleSidebar}
+                            className="text-[#de5c1b] hover:bg-[#de5c1b]/10 p-1 rounded-lg transition-colors"
+                        >
                             <Menu className="w-8 h-8" />
                         </button>
                         <Contact className="text-[#de5c1b] w-8 h-8" />
@@ -410,9 +451,17 @@ const Clients = () => {
                                         <History className="text-[#de5c1b] w-5 h-5" />
                                         Journey Timeline
                                     </h4>
-                                    <button className="text-[#de5c1b] text-xs font-bold hover:underline">View All</button>
+                                    <button
+                                        onClick={() => {
+                                            const element = document.getElementById('journey-timeline');
+                                            if (element) element.scrollIntoView({ behavior: 'smooth' });
+                                        }}
+                                        className="text-[#de5c1b] text-xs font-bold hover:underline"
+                                    >
+                                        View All
+                                    </button>
                                 </div>
-                                <div className="space-y-6 border-l-2 border-[#de5c1b]/20 ml-2 pl-6 py-2">
+                                <div id="journey-timeline" className="space-y-6 border-l-2 border-[#de5c1b]/20 ml-2 pl-6 py-2">
                                     {selectedClient.history.map((item) => (
                                         <div key={item.id} className="relative">
                                             <div className="absolute -left-[31px] top-1 h-4 w-4 rounded-full border-2 border-white dark:border-[#211611] bg-[#de5c1b]" />
@@ -431,11 +480,17 @@ const Clients = () => {
 
                             {/* Quick Actions */}
                             <div className="sticky bottom-0 bg-white dark:bg-[#211611] pt-4 pb-2 border-t border-[#de5c1b]/10 grid grid-cols-2 gap-3">
-                                <button className="flex items-center justify-center gap-2 py-3 rounded-xl border border-[#de5c1b]/20 bg-[#de5c1b]/5 text-[#de5c1b] font-bold text-sm hover:bg-[#de5c1b]/10 transition-colors">
+                                <button
+                                    onClick={() => window.location.href = `mailto:${selectedClient.contactInfo.email}`}
+                                    className="flex items-center justify-center gap-2 py-3 rounded-xl border border-[#de5c1b]/20 bg-[#de5c1b]/5 text-[#de5c1b] font-bold text-sm hover:bg-[#de5c1b]/10 transition-colors"
+                                >
                                     <MessageSquare className="w-4 h-4" />
                                     Message
                                 </button>
-                                <button className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#de5c1b] text-white font-bold text-sm hover:bg-[#de5c1b]/90 transition-colors shadow-lg shadow-[#de5c1b]/20">
+                                <button
+                                    onClick={() => navigate('/schedule')}
+                                    className="flex items-center justify-center gap-2 py-3 rounded-xl bg-[#de5c1b] text-white font-bold text-sm hover:bg-[#de5c1b]/90 transition-colors shadow-lg shadow-[#de5c1b]/20"
+                                >
                                     <PlusCircle className="w-4 h-4" />
                                     Book Now
                                 </button>

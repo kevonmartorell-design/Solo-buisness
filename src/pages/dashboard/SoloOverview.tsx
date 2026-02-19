@@ -42,17 +42,19 @@ const SoloOverview = () => {
                 const orgId = userProfile.organization_id;
 
                 // Fetch Bookings
-                const { data: bookingsData } = await supabase
+                const { data: bookingsData, error } = await supabase
                     .from('bookings')
                     .select(`
                         id,
                         status,
-                        date,
+                        booking_datetime,
                         service:services (
                             price
                         )
                     `)
                     .eq('organization_id', orgId);
+
+                if (error) throw error;
 
                 const bookings = bookingsData as any[] || [];
 
@@ -68,18 +70,42 @@ const SoloOverview = () => {
                 // Upcoming Bookings (Confirmed & Future Date)
                 const now = new Date();
                 const upcomingCount = bookings.filter(b =>
-                    b.status === 'confirmed' && new Date(b.date) > now
+                    b.status === 'confirmed' && new Date(b.booking_datetime) > now
                 ).length;
 
                 // Avg Project Value
                 const avgValue = confirmedBookings.length > 0 ? totalRevenue / confirmedBookings.length : 0;
 
+                // Daily Revenue for Chart (Last 7 Days)
+                const last7Days: Record<string, number> = {};
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    last7Days[d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })] = 0;
+                }
+
+                confirmedBookings.forEach(booking => {
+                    const bDate = new Date(booking.booking_datetime);
+                    const label = bDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    if (last7Days[label] !== undefined) {
+                        const price = Array.isArray(booking.service) ? booking.service[0]?.price : booking.service?.price;
+                        last7Days[label] += (Number(price) || 0);
+                    }
+                });
+
+                const dailyRevenue = Object.entries(last7Days).map(([name, value]) => ({ name, value }));
+
                 setStats({
                     revenue: totalRevenue,
                     upcomingBookings: upcomingCount,
                     avgProjectValue: Math.round(avgValue),
-                    dailyRevenue: [], // Placeholder for chart data
-                    recentActivity: [] // Placeholder
+                    dailyRevenue: dailyRevenue,
+                    recentActivity: confirmedBookings.slice(0, 5).map(b => ({
+                        id: b.id,
+                        type: 'booking',
+                        content: `Completed booking`,
+                        time: new Date(b.booking_datetime).toLocaleDateString()
+                    }))
                 });
 
             } catch (error) {
@@ -125,6 +151,7 @@ const SoloOverview = () => {
                     trendUp={true}
                     icon="payments"
                     delay={0.1}
+                    path="/financials"
                 />
                 <MetricCard
                     title="Upcoming Jobs"
@@ -133,6 +160,7 @@ const SoloOverview = () => {
                     trendUp={true}
                     icon="event"
                     delay={0.2}
+                    path="/schedule"
                 />
                 <MetricCard
                     title="Avg. Job Value"
@@ -141,6 +169,7 @@ const SoloOverview = () => {
                     trendUp={true}
                     icon="price_check"
                     delay={0.3}
+                    path="/analytics"
                 />
             </div>
 

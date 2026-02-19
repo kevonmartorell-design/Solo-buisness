@@ -50,7 +50,7 @@ const Employees = () => {
         if (!user) return;
         try {
             // Get Org ID
-            const { data: profile } = await supabase
+            const { data: profile } = await (supabase as any)
                 .from('profiles')
                 .select('organization_id')
                 .eq('id', user.id)
@@ -323,10 +323,16 @@ const EmployeeCard = ({ employee }: { employee: Employee }) => (
         </div>
 
         <div className="flex items-center justify-between gap-3 text-sm">
-            <button className="flex-1 py-2 flex items-center justify-center gap-2 rounded-lg bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-[#de5c1b] transition-colors font-medium border border-transparent hover:border-[#de5c1b]/20">
+            <button
+                onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${employee.phone}`; }}
+                className="flex-1 py-2 flex items-center justify-center gap-2 rounded-lg bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-[#de5c1b] transition-colors font-medium border border-transparent hover:border-[#de5c1b]/20"
+            >
                 <Phone className="w-4 h-4" /> Call
             </button>
-            <button className="flex-1 py-2 flex items-center justify-center gap-2 rounded-lg bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-[#de5c1b] transition-colors font-medium border border-transparent hover:border-[#de5c1b]/20">
+            <button
+                onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${employee.email}`; }}
+                className="flex-1 py-2 flex items-center justify-center gap-2 rounded-lg bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-[#de5c1b] transition-colors font-medium border border-transparent hover:border-[#de5c1b]/20"
+            >
                 <Mail className="w-4 h-4" /> Msg
             </button>
         </div>
@@ -366,8 +372,14 @@ const EmployeeRow = ({ employee }: { employee: Employee }) => (
         </td>
         <td className="p-4 text-slate-500 dark:text-slate-400 text-sm">
             <div className="flex items-center gap-3">
-                <Phone className="w-4 h-4 hover:text-[#de5c1b] cursor-pointer" />
-                <Mail className="w-4 h-4 hover:text-[#de5c1b] cursor-pointer" />
+                <Phone
+                    onClick={(e) => { e.stopPropagation(); window.location.href = `tel:${employee.phone}`; }}
+                    className="w-4 h-4 hover:text-[#de5c1b] cursor-pointer"
+                />
+                <Mail
+                    onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${employee.email}`; }}
+                    className="w-4 h-4 hover:text-[#de5c1b] cursor-pointer"
+                />
             </div>
         </td>
         <td className="p-4 text-right">

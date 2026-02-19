@@ -20,6 +20,7 @@ import MyBookings from './pages/dashboard/MyBookings';
 import Settings from './pages/dashboard/Settings';
 import Financials from './pages/dashboard/Financials';
 import AEGISAI from './pages/dashboard/AEGISAI';
+import UpgradeRequired from './pages/dashboard/UpgradeRequired';
 
 import PublicBooking from './pages/public/PublicBooking';
 import PublicReview from './pages/public/PublicReview';
@@ -56,6 +57,7 @@ function App() {
 
                     <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                       <Route path="/dashboard" element={<DashboardHome />} />
+                      <Route path="/upgrade-required" element={<UpgradeRequired />} />
 
                       {/* Business Only */}
                       <Route path="/vault" element={
