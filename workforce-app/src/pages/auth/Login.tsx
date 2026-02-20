@@ -11,6 +11,49 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Phone Login State
+    const [isPhoneLogin, setIsPhoneLogin] = useState(false);
+    const [phone, setPhone] = useState('');
+    const [otp, setOtp] = useState('');
+    const [showOtpInput, setShowOtpInput] = useState(false);
+
+    const handlePhoneLogin = async () => {
+        try {
+            setLoading(true);
+            const { error } = await supabase.auth.signInWithOtp({
+                phone: phone,
+            });
+            if (error) throw error;
+            setShowOtpInput(true);
+        } catch (err: any) {
+            console.error('Phone login error:', err);
+            setError(err.message || 'Failed to send verification code');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const verifyOtp = async () => {
+        try {
+            setLoading(true);
+            const { data, error } = await supabase.auth.verifyOtp({
+                phone: phone,
+                token: otp,
+                type: 'sms',
+            });
+            if (error) throw error;
+
+            if (data.user) {
+                navigate('/dashboard');
+            }
+        } catch (err: any) {
+            console.error('OTP verify error:', err);
+            setError(err.message || 'Invalid verification code');
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -132,6 +175,71 @@ const Login = () => {
 
 
                     </form>
+
+                    <div className="mt-6">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsPhoneLogin(!isPhoneLogin);
+                                setError(null);
+                                setShowOtpInput(false);
+                            }}
+                            className="w-full text-center text-sm text-industrial-silver/60 hover:text-[#de5c1b] transition-colors"
+                        >
+                            {isPhoneLogin ? 'Back to Email Login' : 'Login with Phone Number'}
+                        </button>
+
+                        {isPhoneLogin && (
+                            <div className="mt-4 p-4 bg-[#1a1614] rounded-lg border border-industrial-silver/10 animate-in fade-in slide-in-from-top-2">
+                                {!showOtpInput ? (
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex flex-col gap-2">
+                                            <label className="text-industrial-silver text-sm font-medium ml-1">Phone Number</label>
+                                            <input
+                                                name="phone"
+                                                value={phone}
+                                                onChange={(e) => setPhone(e.target.value)}
+                                                className="w-full bg-[#261f1c] border border-industrial-silver/20 rounded-lg py-3 pl-4 pr-4 text-white placeholder:text-industrial-silver/30 focus:outline-none focus:ring-1 focus:ring-[#de5c1b] focus:border-[#de5c1b]"
+                                                placeholder="+15551234567"
+                                                type="tel"
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handlePhoneLogin}
+                                            disabled={loading || !phone}
+                                            className="w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-3 rounded-lg shadow-lg shadow-[#de5c1b]/20 transition-all disabled:opacity-50"
+                                        >
+                                            {loading ? 'Sending...' : 'Send Code'}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex flex-col gap-2">
+                                            <label className="text-industrial-silver text-sm font-medium ml-1">Verification Code</label>
+                                            <input
+                                                name="otp"
+                                                value={otp}
+                                                onChange={(e) => setOtp(e.target.value)}
+                                                className="w-full bg-[#261f1c] border border-industrial-silver/20 rounded-lg py-3 pl-4 pr-4 text-white placeholder:text-industrial-silver/30 focus:outline-none focus:ring-1 focus:ring-[#de5c1b] focus:border-[#de5c1b]"
+                                                placeholder="123456"
+                                                type="text"
+                                                maxLength={6}
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={verifyOtp}
+                                            disabled={loading || !otp}
+                                            className="w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-3 rounded-lg shadow-lg shadow-[#de5c1b]/20 transition-all disabled:opacity-50"
+                                        >
+                                            {loading ? 'Verifying...' : 'Verify & Login'}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Decorative Elements */}
                     <div className="mt-8 flex items-center gap-4">

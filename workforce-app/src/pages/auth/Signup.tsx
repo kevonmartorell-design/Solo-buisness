@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBranding } from '../../contexts/BrandingContext';
 import { supabase } from '../../lib/supabase';
+import toast from 'react-hot-toast';
 
 const Signup = () => {
     const navigate = useNavigate();
@@ -10,6 +11,62 @@ const Signup = () => {
     const { companyName, logoUrl } = useBranding();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const [isPhoneSignup, setIsPhoneSignup] = useState(false);
+    const [phone, setPhone] = useState('');
+    const [otp, setOtp] = useState('');
+    const [showOtpInput, setShowOtpInput] = useState(false);
+
+    const handlePhoneSignup = async () => {
+        try {
+            setLoading(true);
+            const { error } = await supabase.auth.signInWithOtp({
+                phone: phone,
+            });
+            if (error) throw error;
+            setShowOtpInput(true);
+            toast.success('Verification code sent!');
+        } catch (err: any) {
+            console.error('Phone signup error:', err);
+            toast.error(err.message || 'Failed to send verification code');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const verifyOtp = async () => {
+        try {
+            setLoading(true);
+            const { data, error } = await supabase.auth.verifyOtp({
+                phone: phone,
+                token: otp,
+                type: 'sms',
+            });
+            if (error) throw error;
+
+            if (data.user) {
+                await login();
+                // Update profile with tier info if needed
+                if (data.user.user_metadata?.tier !== tier.toLowerCase()) {
+                    await supabase.auth.updateUser({
+                        data: { tier: tier.toLowerCase() }
+                    });
+                }
+
+                const selectedTier = tier.toLowerCase();
+                if (selectedTier === 'free') {
+                    navigate('/dashboard');
+                } else {
+                    navigate('/onboarding');
+                }
+            }
+        } catch (err: any) {
+            console.error('OTP verify error:', err);
+            toast.error(err.message || 'Invalid verification code');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const [searchParams] = useSearchParams();
     const [tier, setTier] = useState<string>(searchParams.get('tier') || 'Free'); // Default to Free if not specified
@@ -65,6 +122,21 @@ const Signup = () => {
             setError(err.message || 'Failed to sign up');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSocialLogin = async (provider: 'google' | 'linkedin' | 'apple') => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: provider,
+                options: {
+                    redirectTo: `${window.location.origin}/dashboard` // Or /onboarding, handled by auth state usually
+                }
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            console.error(`${provider} login error:`, err);
+            toast.error(`Failed to sign in with ${provider}. Please try again.`);
         }
     };
 
@@ -248,22 +320,91 @@ const Signup = () => {
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
-                        <button className="flex items-center justify-center py-3 px-4 rounded-lg border border-white/10 bg-[#261f1c] hover:bg-[#2c2420] hover:border-white/20 transition-all">
+                        <button
+                            type="button"
+                            onClick={() => handleSocialLogin('google')}
+                            className="flex items-center justify-center py-3 px-4 rounded-lg border border-white/10 bg-[#261f1c] hover:bg-[#2c2420] hover:border-white/20 transition-all">
                             <svg className="w-5 h-5 fill-slate-400" viewBox="0 0 24 24">
                                 <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.909 3.144-1.908 4.144-1.255 1.255-3.155 2.633-6.412 2.633-5.144 0-9.28-4.144-9.28-9.28s4.136-9.28 9.28-9.28c2.783 0 4.982 1.1 6.601 2.633l2.31-2.31c-2.022-1.894-4.63-3.3-8.911-3.3-7.512 0-13.682 6.17-13.682 13.682s6.17 13.682 13.682 13.682c4.047 0 7.106-1.344 9.467-3.818 2.443-2.443 3.218-5.858 3.218-8.736 0-.829-.061-1.611-.184-2.32h-12.502z"></path>
                             </svg>
                         </button>
-                        <button className="flex items-center justify-center py-3 px-4 rounded-lg border border-white/10 bg-[#261f1c] hover:bg-[#2c2420] hover:border-white/20 transition-all">
+                        <button
+                            type="button"
+                            onClick={() => handleSocialLogin('linkedin')}
+                            className="flex items-center justify-center py-3 px-4 rounded-lg border border-white/10 bg-[#261f1c] hover:bg-[#2c2420] hover:border-white/20 transition-all">
                             <svg className="w-5 h-5 fill-slate-400" viewBox="0 0 24 24">
                                 <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"></path>
                             </svg>
                         </button>
-                        <button className="flex items-center justify-center py-3 px-4 rounded-lg border border-white/10 bg-[#261f1c] hover:bg-[#2c2420] hover:border-white/20 transition-all">
-                            <svg className="w-5 h-5 fill-slate-400" viewBox="0 0 24 24">
-                                <path d="M17.05 20.28c-.98 1.42-2.03 2.82-3.62 2.85-1.56.03-2.06-.92-3.85-.92-1.8 0-2.35.9-3.83.95-1.54.05-2.75-1.54-3.74-2.95-2-2.89-3.53-8.17-1.46-11.77 1.03-1.79 2.86-2.92 4.87-2.95 1.52-.03 2.96 1.02 3.89 1.02.93 0 2.68-1.28 4.51-1.1 1.04.04 3.96.42 5.84 3.17-.15.09-3.5 2.03-3.46 6.07.04 4.85 4.22 6.56 4.26 6.57-.03.09-.67 2.3-2.21 4.53v-.02zm-3.23-17.82c.83-1.01 1.39-2.42 1.23-3.83-1.21.05-2.67.81-3.54 1.82-.78.89-1.46 2.33-1.27 3.71 1.35.11 2.74-.7 3.58-1.7z"></path>
-                            </svg>
+                        <button
+                            type="button"
+                            onClick={() => setIsPhoneSignup(!isPhoneSignup)}
+                            className={`flex items-center justify-center py-3 px-4 rounded-lg border transition-all ${isPhoneSignup
+                                ? 'bg-[#de5c1b]/20 border-[#de5c1b] text-white'
+                                : 'bg-[#261f1c] border-white/10 hover:bg-[#2c2420] hover:border-white/20'}`}>
+                            <span className="material-symbols-outlined text-slate-400 group-hover:text-white">smartphone</span>
                         </button>
                     </div>
+
+                    {isPhoneSignup && (
+                        <div className="mt-4 p-4 bg-[#261f1c] rounded-lg border border-white/10 animate-in fade-in slide-in-from-top-2">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-slate-400 text-sm font-medium ml-1">Phone Number</label>
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="material-symbols-outlined text-slate-500 text-xl group-focus-within:text-[#de5c1b] transition-colors">call</span>
+                                    </div>
+                                    <input
+                                        name="phone"
+                                        value={phone}
+                                        onChange={(e) => setPhone(e.target.value)}
+                                        className="w-full bg-[#1a1614] border border-white/10 rounded-lg py-3.5 pl-11 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#de5c1b] focus:border-[#de5c1b] transition-all"
+                                        placeholder="+15551234567"
+                                        type="tel"
+                                    />
+                                </div>
+                            </div>
+
+                            {showOtpInput && (
+                                <div className="flex flex-col gap-2 mt-4">
+                                    <label className="text-slate-400 text-sm font-medium ml-1">Verification Code</label>
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span className="material-symbols-outlined text-slate-500 text-xl group-focus-within:text-[#de5c1b] transition-colors">lock_clock</span>
+                                        </div>
+                                        <input
+                                            name="otp"
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value)}
+                                            className="w-full bg-[#1a1614] border border-white/10 rounded-lg py-3.5 pl-11 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-[#de5c1b] focus:border-[#de5c1b] transition-all"
+                                            placeholder="123456"
+                                            type="text"
+                                            maxLength={6}
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={verifyOtp}
+                                        disabled={loading}
+                                        className="w-full mt-2 bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-3 rounded-lg transition-all"
+                                    >
+                                        Verify Code
+                                    </button>
+                                </div>
+                            )}
+
+                            {!showOtpInput && (
+                                <button
+                                    type="button"
+                                    onClick={handlePhoneSignup}
+                                    disabled={loading || !phone}
+                                    className="w-full mt-4 bg-white/10 hover:bg-white/20 text-white font-bold py-3 rounded-lg transition-all disabled:opacity-50"
+                                >
+                                    {loading ? 'Sending...' : 'Send Verification Code'}
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                     <div className="mt-12 text-center">
                         <p className="text-[13px] text-slate-500 leading-relaxed">

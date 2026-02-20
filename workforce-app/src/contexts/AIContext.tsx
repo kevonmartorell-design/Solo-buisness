@@ -92,7 +92,7 @@ export const AIProvider = ({ children }: { children: ReactNode }) => {
             // 1. Fetch Organization Details
             const { data: org } = await (supabase as any)
                 .from('organizations')
-                .select('name')
+                .select('business_name')
                 .eq('id', orgId)
                 .single();
 
@@ -126,11 +126,18 @@ export const AIProvider = ({ children }: { children: ReactNode }) => {
             const revenueTrend = priorRevenue === 0 ? 0 : ((recentRevenue - priorRevenue) / priorRevenue) * 100;
 
             // 4. Labor Issues (Shifts with low margin)
-            const { data: riskyShifts } = await (supabase as any)
+            // Note: PostgREST doesn't support column comparison in filter directly (lt(bill_rate, pay_rate * 1.5))
+            // So we fetch shifts and filter in JS
+            const { data: shifts } = await (supabase as any)
                 .from('shifts')
                 .select('pay_rate, bill_rate')
-                .eq('organization_id', orgId)
-                .lt('bill_rate', 'pay_rate * 1.5'); // Flag if margin is less than 50%
+                .eq('organization_id', orgId);
+
+            const riskyShifts = shifts?.filter((s: any) => {
+                const pay = Number(s.pay_rate) || 0;
+                const bill = Number(s.bill_rate) || 0;
+                return bill < pay * 1.5;
+            }) || [];
 
             // 5. Total Expenses
             const { data: expenses } = await (supabase as any)
@@ -159,10 +166,10 @@ export const AIProvider = ({ children }: { children: ReactNode }) => {
                 expenses: totalExpenses,
                 profit: recentRevenue - totalExpenses,
                 revenueTrend: Math.round(revenueTrend),
-                laborIssues: riskyShifts?.length || 0,
+                laborIssues: riskyShifts.length,
                 topService,
                 employeeCount: empCount || 0,
-                businessName: org?.name || 'Your Business'
+                businessName: org?.business_name || 'Your Business'
             };
         } catch (e) {
             console.error('Error fetching business context:', e);

@@ -33,6 +33,8 @@ import { OnboardingProvider } from './contexts/OnboardingContext';
 import { AIProvider } from './contexts/AIContext';
 import Onboarding from './pages/auth/Onboarding';
 
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   return (
     <SidebarProvider>
@@ -42,6 +44,7 @@ function App() {
             <OnboardingProvider>
               <AIProvider>
                 <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                  <Toaster position="top-right" />
                   <Routes>
                     <Route path="/" element={<Landing />} />
                     <Route path="/landing" element={<Landing />} />
