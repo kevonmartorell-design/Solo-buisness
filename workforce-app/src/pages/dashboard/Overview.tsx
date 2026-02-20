@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -281,7 +282,11 @@ const Overview = () => {
                     <span className="material-symbols-outlined text-6xl text-white/10 mb-4 group-hover:text-[#de5c1b]/40 transition-colors">map</span>
                     <h3 className="text-white font-bold text-lg mb-1">Live Fleet Map</h3>
                     <p className="text-white/40 text-xs uppercase tracking-widest">Global Positioning Module</p>
-                    <button className="mt-6 px-6 py-2 border border-white/10 rounded-lg text-white/60 hover:text-white hover:border-[#de5c1b] hover:bg-[#de5c1b]/10 transition-all text-xs font-bold uppercase tracking-wider">
+                    <button
+                        onClick={() => toast.success('Live Fleet Map module coming soon!', {
+                            style: { background: '#333', color: '#fff' }
+                        })}
+                        className="mt-6 px-6 py-2 border border-white/10 rounded-lg text-white/60 hover:text-white hover:border-[#de5c1b] hover:bg-[#de5c1b]/10 transition-all text-xs font-bold uppercase tracking-wider">
                         Initialize View
                     </button>
                 </motion.div>

@@ -166,7 +166,7 @@ const Profile = () => {
             }
 
             // Show success feedback
-            // console.log('Saved successfully'); // Removed debug log
+
             showToast('Profile updated successfully', 'success');
             await fetchData(); // Refresh data
 

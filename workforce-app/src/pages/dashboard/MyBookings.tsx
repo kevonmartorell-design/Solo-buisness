@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import EventCard from '../../components/dashboard/schedule/EventCard';
@@ -115,8 +116,8 @@ const MyBookings = () => {
                     <button
                         onClick={() => setActiveTab('upcoming')}
                         className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'upcoming'
-                                ? 'bg-white dark:bg-[#2c2420] text-[#de5c1b] shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                            ? 'bg-white dark:bg-[#2c2420] text-[#de5c1b] shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                             }`}
                     >
                         <Calendar className="w-4 h-4" />
@@ -125,8 +126,8 @@ const MyBookings = () => {
                     <button
                         onClick={() => setActiveTab('past')}
                         className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'past'
-                                ? 'bg-white dark:bg-[#2c2420] text-[#de5c1b] shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                            ? 'bg-white dark:bg-[#2c2420] text-[#de5c1b] shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                             }`}
                     >
                         <History className="w-4 h-4" />
@@ -141,8 +142,8 @@ const MyBookings = () => {
                             <EventCard
                                 key={event.id}
                                 event={event}
-                                onSwapRequest={() => { }} // No-op for now
-                                onEdit={() => { }} // No-op for now
+                                onSwapRequest={() => toast.success('Swap requests coming soon!', { icon: '🚧' })}
+                                onEdit={() => toast.success('Shift editing coming soon!', { icon: '🚧' })}
                             />
                         ))
                     ) : (

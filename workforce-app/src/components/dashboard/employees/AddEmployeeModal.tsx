@@ -67,7 +67,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }: AddEmployeeModalProps)
                     phone: formData.phone,
                     role: formData.role,
                     department: formData.department,
-                    status: 'active',
+
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
                 } as any);

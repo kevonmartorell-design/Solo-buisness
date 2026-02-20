@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import type { Database } from '../../types/supabase';
 import { Star, MessageSquare, Check, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const PublicReview = () => {
     const { orgId, bookingId } = useParams();
@@ -69,7 +70,7 @@ const PublicReview = () => {
             setSuccess(true);
         } catch (err) {
             console.error("Error submitting review:", err);
-            alert("Could not submit review. Please try again.");
+            toast.error("Could not submit review. Please try again.");
         } finally {
             setSubmitting(false);
         }

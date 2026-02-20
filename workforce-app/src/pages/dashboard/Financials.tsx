@@ -3,6 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { DollarSign, PieChart, Plus, Trash2, FileText } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Financials = () => {
     const sb = supabase as SupabaseClient<any, "public", any>;
@@ -124,7 +125,7 @@ const Financials = () => {
             }
         } catch (error) {
             console.error('Error adding expense:', error);
-            alert('Failed to add expense');
+            toast.error('Failed to add expense');
         }
     };
 
@@ -185,7 +186,7 @@ const Financials = () => {
                 const total = payrollItems.reduce((sum, emp) => sum + emp.total, 0);
 
                 if (total === 0) {
-                    alert('No payroll data for this period.');
+                    toast.error('No payroll data for this period.');
                     return;
                 }
 
@@ -199,12 +200,12 @@ const Financials = () => {
                 });
 
                 if (error) throw error;
-                alert('Payroll processed successfully!');
+                toast.success('Payroll processed successfully!');
                 fetchFinancialData();
             }
         } catch (error) {
             console.error('Error processing payroll:', error);
-            alert('Failed to process payroll');
+            toast.error('Failed to process payroll');
         }
     };
 

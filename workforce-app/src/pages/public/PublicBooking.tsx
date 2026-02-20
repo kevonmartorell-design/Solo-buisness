@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import type { Database } from '../../types/supabase';
 import { Calendar, Clock, Check, ChevronLeft, Loader2, MapPin, Globe, User, Mail, Phone, Star, Instagram, Facebook, Linkedin } from 'lucide-react';
 import { format } from 'date-fns';
+import toast from 'react-hot-toast';
 
 type Organization = {
     id: string;
@@ -189,7 +190,7 @@ const PublicBooking = () => {
 
         } catch (err) {
             console.error("Booking submission error:", err);
-            alert("Failed to submit booking. Please try again.");
+            toast.error("Failed to submit booking. Please try again.");
         } finally {
             setSubmitting(false);
         }

@@ -173,7 +173,7 @@ const Schedule = () => {
                     // Let's just listen to all changes and filter in callback or just refetch. Refetch is safer for consistency.
                 },
                 (payload) => {
-                    // console.log('Realtime update:', payload);
+
                     if (payload.eventType === 'INSERT') {
                         showFeedback('New booking received!', 'success');
                         fetchScheduleData();

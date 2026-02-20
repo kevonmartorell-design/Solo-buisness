@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import {
     Search,
     Filter,
@@ -21,7 +22,7 @@ interface Employee {
     department: 'Field Ops' | 'Management' | 'Sales' | 'Admin';
     status: 'active' | 'on-leave' | 'inactive';
     clockStatus: 'clocked-in' | 'clocked-out' | 'break';
-    efficiency: number;
+    efficiency?: number;
     email: string;
     phone: string;
     location: string;
@@ -77,11 +78,11 @@ const Employees = () => {
                     department: p.department || 'Field Ops', // specific types might mismatch, casting for now
                     status: 'active', // Default
                     clockStatus: 'clocked-out', // Default
-                    efficiency: 100, // Placeholder
+                    efficiency: p.efficiency, // Undefined if not in schema
                     email: p.email || 'N/A',
                     phone: p.phone || 'N/A',
-                    location: 'Field', // Placeholder
-                    certifications: [], // Placeholder
+                    location: p.location || 'Remote',
+                    certifications: [], // Empty for now
                     imgUrl: p.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || 'User')}&background=random`,
                     joinDate: new Date(p.created_at).toLocaleDateString()
                 }));
@@ -102,7 +103,9 @@ const Employees = () => {
     // Metrics Calculation
     const totalEmployees = employees.length;
     const activeNow = employees.filter(e => e.clockStatus === 'clocked-in').length;
-    const avgEfficiency = totalEmployees > 0 ? Math.round(employees.reduce((acc, curr) => acc + curr.efficiency, 0) / totalEmployees) : 0;
+    const avgEfficiency = totalEmployees > 0
+        ? Math.round(employees.reduce((acc, curr) => acc + (curr.efficiency || 0), 0) / totalEmployees)
+        : 0;
     const expiringCerts = employees.filter(e => e.certifications.some(c => c.status === 'expiring' || c.status === 'expired')).length;
 
     // Loading State
@@ -284,9 +287,15 @@ const KPICard = ({ title, value, trend, subtext, icon: Icon, color, active, aler
 
 const EmployeeCard = ({ employee }: { employee: Employee }) => (
     <div className="bg-white dark:bg-[#1c1917] border border-slate-200 dark:border-white/10 rounded-xl p-6 flex flex-col gap-4 shadow-sm hover:shadow-md hover:border-[#de5c1b]/30 transition-all group relative overflow-hidden">
-        <div className="absolute top-4 right-4 text-slate-400 hover:text-[#de5c1b] cursor-pointer">
+        <button
+            className="absolute top-4 right-4 text-slate-400 hover:text-[#de5c1b] cursor-pointer"
+            onClick={(e) => {
+                e.preventDefault();
+                toast.success('Employee management options coming soon!', { icon: '🚧' });
+            }}
+        >
             <MoreVertical className="w-5 h-5" />
-        </div>
+        </button>
 
         <div className="flex items-start gap-4">
             <div className="relative">
@@ -305,9 +314,9 @@ const EmployeeCard = ({ employee }: { employee: Employee }) => (
                 <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Efficiency</p>
                 <div className="flex items-center gap-2 mt-1">
                     <div className="flex-1 h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-[#de5c1b]" style={{ width: `${employee.efficiency}%` }}></div>
+                        <div className="h-full bg-[#de5c1b]" style={{ width: `${employee.efficiency || 0}%` }}></div>
                     </div>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white">{employee.efficiency}%</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">{employee.efficiency !== undefined ? `${employee.efficiency}%` : 'N/A'}</span>
                 </div>
             </div>
             <div>
@@ -336,7 +345,7 @@ const EmployeeCard = ({ employee }: { employee: Employee }) => (
                 <Mail className="w-4 h-4" /> Msg
             </button>
         </div>
-    </div>
+    </div >
 );
 
 const EmployeeRow = ({ employee }: { employee: Employee }) => (
@@ -383,7 +392,10 @@ const EmployeeRow = ({ employee }: { employee: Employee }) => (
             </div>
         </td>
         <td className="p-4 text-right">
-            <button className="text-slate-400 hover:text-[#de5c1b]">
+            <button
+                className="text-slate-400 hover:text-[#de5c1b]"
+                onClick={() => toast.success('Options coming soon!', { icon: '🚧' })}
+            >
                 <MoreVertical className="w-4 h-4" />
             </button>
         </td>

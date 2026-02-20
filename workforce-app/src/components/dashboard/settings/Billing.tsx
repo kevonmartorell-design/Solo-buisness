@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CreditCard, ExternalLink, ShieldCheck, Zap, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 const Billing = () => {
     const { user } = useAuth();
@@ -58,7 +59,7 @@ const Billing = () => {
             if (data?.url) window.location.href = data.url;
         } catch (err) {
             console.error('Portal error:', err);
-            alert('Failed to open billing portal. Please contact support.');
+            toast.error('Failed to open billing portal. Please contact support.');
         } finally {
             setActionLoading(false);
         }
@@ -74,7 +75,7 @@ const Billing = () => {
             if (data?.url) window.location.href = data.url;
         } catch (err) {
             console.error('Checkout error:', err);
-            alert('Failed to initiate checkout. Please try again.');
+            toast.error('Failed to initiate checkout. Please try again.');
         } finally {
             setActionLoading(false);
         }

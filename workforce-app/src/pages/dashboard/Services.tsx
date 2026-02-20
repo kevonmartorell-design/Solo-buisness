@@ -20,6 +20,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useVault } from '../../contexts/VaultContext';
 import { useSidebar } from '../../contexts/SidebarContext';
 import type { Database } from '../../types/supabase';
+import toast from 'react-hot-toast';
 
 // Define types derived from Supabase
 type ServiceRow = Database['public']['Tables']['services']['Row'];
@@ -167,7 +168,7 @@ const Services = () => {
             ));
         } catch (error) {
             console.error('Error updating stock:', error);
-            alert('Failed to update stock');
+            toast.error('Failed to update stock');
         }
     };
 
@@ -253,7 +254,7 @@ const Services = () => {
 
         } catch (error) {
             console.error('Error adding item:', error);
-            alert('Failed to add item. Please try again.');
+            toast.error('Failed to add item. Please try again.');
         }
     };
 

@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useVault } from '../../contexts/VaultContext';
 import type { VaultItem } from '../../types/vault';
+import toast from 'react-hot-toast';
 import {
     Search,
     Settings,
@@ -81,7 +82,7 @@ const Vault = () => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             if (file.size > 5 * 1024 * 1024) {
-                alert("File size exceeds 5MB limit.");
+                toast.error("File size exceeds 5MB limit.");
                 return;
             }
             setSelectedFile(file);
@@ -112,7 +113,7 @@ const Vault = () => {
             if (fileInputRef.current) fileInputRef.current.value = '';
         } catch (error) {
             console.error("Upload failed", error);
-            alert("Failed to upload document");
+            toast.error("Failed to upload document");
         }
     };
 
@@ -121,7 +122,7 @@ const Vault = () => {
         if (url) {
             window.open(url, '_blank');
         } else {
-            alert('Unable to view document. It may not have a valid file attached.');
+            toast.error('Unable to view document. It may not have a valid file attached.');
         }
     };
 

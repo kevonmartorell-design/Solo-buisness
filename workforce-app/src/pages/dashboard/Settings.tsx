@@ -15,6 +15,7 @@ import { useSidebar } from '../../contexts/SidebarContext';
 import Billing from '../../components/dashboard/settings/Billing';
 import TierUpgradeModal from '../../components/dashboard/settings/TierUpgradeModal';
 import type { Tier } from '../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 // import type { Database } from '../../types/supabase';
 
 
@@ -82,7 +83,7 @@ const Settings = () => {
 
             if (error) throw error;
             if (!clients || clients.length === 0) {
-                alert('No clients to export.');
+                toast.error('No clients to export.');
                 return;
             }
 
@@ -112,7 +113,7 @@ const Settings = () => {
             document.body.removeChild(link);
         } catch (err) {
             console.error('Error exporting clients:', err);
-            alert('Failed to export clients.');
+            toast.error('Failed to export clients.');
         }
     };
 
@@ -149,7 +150,7 @@ const Settings = () => {
             }
         } catch (err) {
             console.error('Error updating tier:', err);
-            alert('Failed to update tier. Please try again.');
+            toast.error('Failed to update tier. Please try again.');
         }
     };
     return (

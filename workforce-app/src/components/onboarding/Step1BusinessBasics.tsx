@@ -225,9 +225,25 @@ const Step1BusinessBasics = () => {
                             id="24-7"
                             type="checkbox"
                             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            checked={daysOfWeek.every(day => {
+                                const hours = data.operatingHours[day];
+                                return hours && !hours.closed && hours.open === '00:00' && hours.close === '23:59';
+                            })}
                             onChange={(e) => {
                                 if (e.target.checked) {
-                                    // Logic for 24/7 if needed, effectively just means open all days
+                                    // Set to 24/7
+                                    const newHours = { ...data.operatingHours };
+                                    daysOfWeek.forEach(day => {
+                                        newHours[day] = { open: '00:00', close: '23:59', closed: false };
+                                    });
+                                    updateData({ operatingHours: newHours });
+                                } else {
+                                    // Reset to default 9-5
+                                    const newHours = { ...data.operatingHours };
+                                    daysOfWeek.forEach(day => {
+                                        newHours[day] = { open: '09:00', close: '17:00', closed: false };
+                                    });
+                                    updateData({ operatingHours: newHours });
                                 }
                             }}
                         />
