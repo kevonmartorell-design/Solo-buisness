@@ -74,7 +74,7 @@ const Employees = () => {
                 const mappedEmployees: Employee[] = profiles.map((p: any) => ({
                     id: p.id,
                     name: p.name || 'Unknown User',
-                    role: p.role || 'Team Member',
+                    role: p.role ? p.role.split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Associate',
                     department: p.department || 'Field Ops', // specific types might mismatch, casting for now
                     status: 'active', // Default
                     clockStatus: 'clocked-out', // Default

@@ -18,7 +18,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }: AddEmployeeModalProps)
         lastName: '',
         email: '',
         phone: '',
-        role: 'Team Member',
+        role: 'associate',
         department: 'Field Ops',
     });
 
@@ -159,10 +159,12 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }: AddEmployeeModalProps)
                                 onChange={handleChange}
                                 className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-[#de5c1b] focus:border-transparent outline-none transition-all dark:text-white"
                             >
-                                <option value="Team Member">Team Member</option>
-                                <option value="Manager">Manager</option>
-                                <option value="Admin">Admin</option>
-                                <option value="Contractor">Contractor</option>
+                                <option value="associate">Associate</option>
+                                <option value="department_manager">Department Manager</option>
+                                <option value="store_manager">Store Manager</option>
+                                <option value="district_manager">District Manager</option>
+                                <option value="super_admin">Super Admin</option>
+                                <option value="client">Client</option>
                             </select>
                         </div>
                         <div className="space-y-1.5">
