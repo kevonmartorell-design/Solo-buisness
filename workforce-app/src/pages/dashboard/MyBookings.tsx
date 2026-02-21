@@ -74,10 +74,12 @@ const MyBookings = () => {
                 .from('appointment_requests')
                 .select(`
                     id,
+                    organization_id,
+                    client_id,
                     requested_datetime,
                     notes,
                     status,
-                    client:clients(name, email, phone),
+                    client:clients(id, name, email, phone),
                     service:services(id, name, duration)
                 `)
                 .eq('employee_id', user.id)
@@ -111,26 +113,11 @@ const MyBookings = () => {
         setActionLoading(req.id);
 
         try {
-            // 1. Create the confirmed booking
-            const { error: bookingError } = await supabase.from('bookings').insert({
-                organization_id: (user as any).user_metadata?.organization_id || null, // Best effort fallback
-                employee_id: user.id,
-                client_id: req.client?.id || null, // If joined client has ID, else null
-                service_id: req.service?.id,
-                booking_datetime: req.requested_datetime,
-                status: 'confirmed',
-                notes: req.notes
-            } as any);
+            const { error: rpcError } = await (supabase.rpc as any)('approve_appointment_request', { p_request_id: req.id });
 
-            if (bookingError) throw bookingError;
+            if (rpcError) throw rpcError;
 
-            // 2. Mark request as confirmed
-            const { error: reqError } = await (supabase as any)
-                .from('appointment_requests')
-                .update({ status: 'confirmed' })
-                .eq('id', req.id);
-
-            if (reqError) throw reqError;
+            
 
             // Notify client if they have a phone number
             if (req.client?.phone) {
@@ -370,3 +357,5 @@ const MyBookings = () => {
 };
 
 export default MyBookings;
+
+
