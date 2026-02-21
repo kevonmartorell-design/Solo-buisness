@@ -145,7 +145,7 @@ const StoreManagerView = () => {
                 </div>
                 <div className="h-80">
                     {chartData.length > 0 && chartData.some(d => d.revenue > 0) ? (
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                             <ComposedChart data={chartData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
                                 <XAxis dataKey="day" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />

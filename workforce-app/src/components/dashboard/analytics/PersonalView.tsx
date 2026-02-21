@@ -206,7 +206,7 @@ const PersonalView = () => {
                 <div className="bg-white dark:bg-[#1c1917] p-6 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
                     <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-6">Booking & Revenue Growth</h3>
                     <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                             <AreaChart data={monthlyData}>
                                 <defs>
                                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -228,7 +228,7 @@ const PersonalView = () => {
                 <div className="bg-white dark:bg-[#1c1917] p-6 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
                     <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-6">Revenue by Service</h3>
                     <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                             <PieChart>
                                 <Pie
                                     data={serviceData}
@@ -255,7 +255,7 @@ const PersonalView = () => {
             <div className="bg-white dark:bg-[#1c1917] p-6 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-6">Booking Density (Days)</h3>
                 <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                         <BarChart data={heatmapData}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
                             <XAxis dataKey="day" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />

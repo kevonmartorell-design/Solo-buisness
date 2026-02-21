@@ -7,6 +7,7 @@ import type { Event } from '../../types/schedule';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useNavigate } from 'react-router-dom';
 import { Menu, Calendar, Clock, History, Link as LinkIcon, Check, X, Inbox, CalendarPlus } from 'lucide-react';
+import CreateBookingModal from '../../components/dashboard/schedule/CreateBookingModal';
 
 const MyBookings = () => {
     const { user } = useAuth();
@@ -15,6 +16,7 @@ const MyBookings = () => {
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'requests'>('upcoming');
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     const [events, setEvents] = useState<Event[]>([]);
     const [requests, setRequests] = useState<any[]>([]);
@@ -123,10 +125,9 @@ const MyBookings = () => {
             if (bookingError) throw bookingError;
 
             // 2. Mark request as confirmed
-            // @ts-ignore - Supabase type inference for this table is reporting never
-            const { error: reqError } = await supabase
+            const { error: reqError } = await (supabase as any)
                 .from('appointment_requests')
-                .update({ status: 'confirmed' } as any)
+                .update({ status: 'confirmed' })
                 .eq('id', req.id);
 
             if (reqError) throw reqError;
@@ -158,10 +159,9 @@ const MyBookings = () => {
     const handleDeny = async (req: any) => {
         setActionLoading(req.id);
         try {
-            // @ts-ignore - Supabase type inference is reporting never
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('appointment_requests')
-                .update({ status: 'cancelled' } as any)
+                .update({ status: 'cancelled' })
                 .eq('id', req.id);
 
             if (error) throw error;
@@ -350,12 +350,21 @@ const MyBookings = () => {
 
             {/* Floating Action Button - New Booking */}
             <button
-                onClick={() => navigate('/schedule')}
+                onClick={() => setIsCreateModalOpen(true)}
                 className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3.5 bg-[#de5c1b] hover:bg-[#c4501a] text-white font-bold rounded-2xl shadow-lg shadow-[#de5c1b]/40 transition-all active:scale-95"
             >
                 <CalendarPlus className="w-5 h-5" />
                 New Booking
             </button>
+
+            <CreateBookingModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                employeeId={user?.id || ''}
+                onSuccess={() => {
+                    fetchData();
+                }}
+            />
         </div>
     );
 };
