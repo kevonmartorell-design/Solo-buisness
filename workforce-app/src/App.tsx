@@ -53,7 +53,7 @@ function App() {
 
                     {/* Public Routes (No Auth Required) */}
                     <Route element={<PublicLayout />}>
-                      <Route path="/booking/:orgId" element={<PublicBooking />} />
+                      <Route path="/book/:employeeId" element={<PublicBooking />} />
                       <Route path="/review/:orgId/:bookingId" element={<PublicReview />} />
                     </Route>
 
