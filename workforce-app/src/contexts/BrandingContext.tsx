@@ -47,7 +47,7 @@ export const BrandingProvider = ({ children }: { children: ReactNode }) => {
 
     // Default values
     const [companyName, setCompanyName] = useState('Aegis Cert');
-    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [logoUrl, setLogoUrl] = useState<string | null>('/aegis-logo.png');
     const [primaryColor, setPrimaryColor] = useState('#de5c1b');
     const [secondaryColor, setSecondaryColor] = useState('#1e293b');
     const [font, setFont] = useState('Inter');
@@ -169,7 +169,7 @@ export const BrandingProvider = ({ children }: { children: ReactNode }) => {
 
     const resetBranding = () => {
         setCompanyName('Aegis Cert');
-        setLogoUrl(null);
+        setLogoUrl('/aegis-logo.png');
         setPrimaryColor('#de5c1b');
         setSecondaryColor('#1e293b');
         setFont('Inter');

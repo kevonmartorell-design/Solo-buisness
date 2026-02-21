@@ -90,13 +90,7 @@ const Login = () => {
                 <div className="mb-8 flex flex-col items-center">
                     <div className="w-20 h-20 bg-industrial-charcoal border border-industrial-silver/20 rounded-xl flex items-center justify-center shadow-2xl relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent"></div>
-                        {logoUrl ? (
-                            <img src={logoUrl} alt="Logo" className="w-12 h-12 object-contain z-10" />
-                        ) : (
-                            <span className="material-symbols-outlined text-primary text-5xl z-10">
-                                settings_backup_restore
-                            </span>
-                        )}
+                        <img src={logoUrl || '/aegis-logo.png'} alt="Logo" className="w-12 h-12 object-contain z-10" />
                         <div className="absolute -bottom-2 -right-2 opacity-20">
                             <span className="material-symbols-outlined text-6xl text-industrial-silver">
                                 precision_manufacturing

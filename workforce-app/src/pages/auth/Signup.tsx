@@ -150,13 +150,7 @@ const Signup = () => {
                 <div className="mb-8 flex flex-col items-center">
                     <div className="w-20 h-20 bg-[#1a1614] border border-[#de5c1b]/20 rounded-xl flex items-center justify-center shadow-2xl relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-tr from-[#de5c1b]/10 to-transparent"></div>
-                        {logoUrl ? (
-                            <img src={logoUrl} alt="Logo" className="w-12 h-12 object-contain z-10" />
-                        ) : (
-                            <span className="material-symbols-outlined text-[#de5c1b] text-5xl z-10">
-                                factory
-                            </span>
-                        )}
+                        <img src={logoUrl || '/aegis-logo.png'} alt="Logo" className="w-12 h-12 object-contain z-10" />
                         <div className="absolute -bottom-2 -right-2 opacity-20">
                             <span className="material-symbols-outlined text-6xl text-slate-400">
                                 precision_manufacturing

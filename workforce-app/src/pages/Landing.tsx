@@ -15,9 +15,7 @@ const Landing = () => {
             <nav className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#181311]/80 backdrop-blur-md">
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-[#de5c1b] rounded flex items-center justify-center text-white">
-                            <span className="material-symbols-outlined text-xl">precision_manufacturing</span>
-                        </div>
+                        <img src="/aegis-logo.png" alt="Aegis Cert" className="w-8 h-8 object-contain" />
                         <span className="text-xl font-bold tracking-tighter uppercase text-white">Aegis Cert</span>
                     </div>
                     <div className="hidden md:flex gap-8 text-sm font-medium text-white/60 uppercase tracking-widest">
@@ -53,9 +51,7 @@ const Landing = () => {
                             <div className="relative w-48 h-48 md:w-64 md:h-64 flex items-center justify-center">
                                 <div className="absolute inset-0 border-2 border-[#de5c1b]/30 rounded-full animate-pulse"></div>
                                 <div className="absolute inset-4 border border-white/20 rounded-full"></div>
-                                <span className="material-symbols-outlined text-[100px] md:text-[140px] text-[#de5c1b]" style={{ fontVariationSettings: "'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 48" }}>
-                                    settings_input_component
-                                </span>
+                                <img src="/aegis-logo.png" alt="Aegis Cert" className="w-[100px] md:w-[140px] h-auto object-contain" />
                                 <div className="absolute bottom-0 bg-[#181311] px-4 border border-white/20 py-1 rounded-full text-[10px] uppercase tracking-[0.3em] text-white/60 font-bold">
                                     Operational OS
                                 </div>

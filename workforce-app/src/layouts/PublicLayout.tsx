@@ -7,10 +7,7 @@ const PublicLayout = () => {
             {/* Minimal Header */}
             <header className="bg-white dark:bg-[#211611] border-b border-slate-200 dark:border-white/10 py-4 px-6 md:px-12 flex items-center justify-between sticky top-0 z-50">
                 <div className="flex items-center gap-3">
-                    {/* Placeholder Logo - In real app, this would be the Org's logo if available */}
-                    <div className="bg-[#de5c1b] w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-xl">
-                        W
-                    </div>
+                    <img src="/aegis-logo.png" alt="Aegis Cert" className="w-8 h-8 object-contain" />
                     <span className="font-bold text-lg text-slate-900 dark:text-white tracking-tight">AEGIS CERT</span>
                 </div>
                 {/* Optional: Login Link for existing users */}
