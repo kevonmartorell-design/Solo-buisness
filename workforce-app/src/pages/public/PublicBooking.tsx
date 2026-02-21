@@ -68,57 +68,23 @@ export default function PublicBooking() {
 
         setSubmitting(true);
         try {
-            // First, find or create the client based on email/phone
-            // For MVP simplicity without deep client management logic on public route:
-            // Let's create a Client record if one doesn't exist to link the request.
-            // *Wait*, we can just insert the 'appointment_requests' without a formal client_id if we adjust schema, 
-            // OR create a quick client record. Let's create a client record.
-
-            let clientId = null;
-
-            // Try to find existing client by phone or email
-            let clientQuery = supabase.from('clients').select('id').eq('organization_id', employee.organization_id);
-            if (formData.email) clientQuery = clientQuery.eq('email', formData.email);
-            else if (formData.phone) clientQuery = clientQuery.eq('phone', formData.phone);
-
-            const { data: existingClients } = await clientQuery;
-
-            if (existingClients && existingClients.length > 0) {
-                clientId = (existingClients[0] as any).id;
-            } else {
-                // Create new client
-                const { data: newClient, error: clientError } = await supabase
-                    .from('clients')
-                    .insert({
-                        organization_id: (employee as any).organization_id,
-                        name: formData.name,
-                        email: formData.email,
-                        phone: formData.phone,
-                    } as any)
-                    .select('id')
-                    .single();
-
-                if (clientError) throw clientError;
-                clientId = (newClient as any).id;
-            }
-
             // Combine date & time
             const reqDateTime = new Date(`${formData.date}T${formData.time}`).toISOString();
 
-            // Insert Request
-            const { error: requestError } = await supabase
-                .from('appointment_requests')
-                .insert({
-                    organization_id: employee.organization_id,
-                    employee_id: employee.id,
-                    client_id: clientId,
-                    service_id: formData.serviceId,
-                    requested_datetime: reqDateTime,
-                    notes: `Notes: ${formData.notes}`,
-                    status: 'requested'
-                } as any);
+            // Securely call the Postgres RPC to handle client fetch/create and appointment insert 
+            // This safely bypasses RLS restrictions for anonymous public users.
+            const { error: rpcError } = await (supabase.rpc as any)('create_public_booking', {
+                p_org_id: employee.organization_id,
+                p_emp_id: employee.id,
+                p_service_id: formData.serviceId,
+                p_name: formData.name,
+                p_email: formData.email,
+                p_phone: formData.phone,
+                p_datetime: reqDateTime,
+                p_notes: `Notes: ${formData.notes}`
+            });
 
-            if (requestError) throw requestError;
+            if (rpcError) throw rpcError;
 
             setSuccess(true);
             toast.success("Request sent successfully!");
