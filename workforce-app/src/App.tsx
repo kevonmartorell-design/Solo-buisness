@@ -19,7 +19,6 @@ import Profile from './pages/dashboard/Profile';
 import MyBookings from './pages/dashboard/MyBookings';
 import Settings from './pages/dashboard/Settings';
 import Financials from './pages/dashboard/Financials';
-import AEGISAI from './pages/dashboard/AEGISAI';
 import UpgradeRequired from './pages/dashboard/UpgradeRequired';
 
 import PublicBooking from './pages/public/PublicBooking';
@@ -83,11 +82,6 @@ function App() {
                       <Route path="/analytics" element={
                         <ProtectedRoute allowedTiers={['Solo', 'Business']}>
                           <Analytics />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/aegis-ai" element={
-                        <ProtectedRoute allowedTiers={['Solo', 'Business']}>
-                          <AEGISAI />
                         </ProtectedRoute>
                       } />
                       <Route path="/clients" element={
