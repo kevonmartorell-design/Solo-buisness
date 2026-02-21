@@ -62,10 +62,9 @@ const AssociateView = () => {
                     const estimatedCommission = totalServiceRevenue * 0.15;
 
                     // setEarnings(estimatedCommission); // Earnings = Commission for this view? Or Total?
-                    // Let's say "Estimated Earnings" = Commission + Hourly (mock hourly)
-                    // If we don't have hourly data, let's just use commission for now + base
-                    const mockBasePay = 600; // Base weekly pay
-                    setHourlyEarnings(mockBasePay);
+                    // If we don't have hourly data yet, base earnings default to 0.
+                    // This will be updated when shift/timesheet tracking is fully implemented.
+                    setHourlyEarnings(0);
                     setCommissionEarnings(estimatedCommission);
 
                     // Recent History
