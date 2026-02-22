@@ -26,9 +26,10 @@ const ProtectedRoute = ({ children, allowedRoles, allowedTiers }: ProtectedRoute
     // Check for onboarding completion based on tier
     // Free (Client) users do not need an organization or onboarding
     // Solo and Business users MUST complete onboarding to access the dashboard
-    if (user.tier !== 'Free' && user.onboardingComplete !== true) {
-        return <Navigate to="/onboarding" replace />;
-    }
+    // BYPASS: To skip onboarding and bring users directly to dashboard
+    // if (user.tier !== 'Free' && user.onboardingComplete !== true) {
+    //     return <Navigate to="/onboarding" replace />;
+    // }
 
     return <>{children}</>;
 };

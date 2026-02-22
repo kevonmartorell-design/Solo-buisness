@@ -53,12 +53,7 @@ const Signup = () => {
                     });
                 }
 
-                const selectedTier = tier.toLowerCase();
-                if (selectedTier === 'free') {
-                    navigate('/dashboard');
-                } else {
-                    navigate('/onboarding');
-                }
+                navigate('/dashboard');
             }
         } catch (err: any) {
             console.error('OTP verify error:', err);
@@ -107,15 +102,7 @@ const Signup = () => {
                 // Ensure auth context is refreshed with the new session/profile before navigating
                 await login();
 
-                // If tier is free (Client), skip onboarding and go straight to dashboard
-                // For solo and business, go to onboarding to set up company
-                const selectedTier = tier.toLowerCase();
-
-                if (selectedTier === 'free') {
-                    navigate('/dashboard');
-                } else {
-                    navigate('/onboarding');
-                }
+                navigate('/dashboard');
             }
         } catch (err: any) {
             console.error('Signup error:', err);
