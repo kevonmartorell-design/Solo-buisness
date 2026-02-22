@@ -23,10 +23,10 @@ const ProtectedRoute = ({ children, allowedRoles, allowedTiers }: ProtectedRoute
         return <Navigate to="/upgrade-required" state={{ from: location }} replace />;
     }
 
-    // New: Check for onboarding completion
-    // We allow access if onboardingComplete is undefined (new user without org yet) or true
-    // If explicitly false, redirect to onboarding
-    if (user.onboardingComplete === false) {
+    // Check for onboarding completion based on tier
+    // Free (Client) users do not need an organization or onboarding
+    // Solo and Business users MUST complete onboarding to access the dashboard
+    if (user.tier !== 'Free' && user.onboardingComplete !== true) {
         return <Navigate to="/onboarding" replace />;
     }
 

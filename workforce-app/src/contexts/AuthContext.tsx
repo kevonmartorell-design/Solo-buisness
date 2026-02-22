@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     name: profile.full_name || 'User',
                     role,
                     tier,
-                    onboardingComplete: !!profile.organizations?.onboarding_complete
+                    onboardingComplete: profile.organizations ? !!profile.organizations.onboarding_complete : undefined
                 });
             }
         } catch (error) {

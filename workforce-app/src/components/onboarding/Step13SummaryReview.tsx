@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '../../contexts/OnboardingContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Step13SummaryReview = () => {
     const { data, prevStep, submitOnboarding } = useOnboarding();
+    const { login } = useAuth();
     const navigate = useNavigate();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -13,6 +15,8 @@ const Step13SummaryReview = () => {
         setError(null);
         try {
             await submitOnboarding();
+            // Refresh user session so that ProtectedRoute knows onboarding is complete
+            await login();
             navigate('/dashboard'); // Or wherever you want to go after onboarding
         } catch (err) {
             console.error('Failed to submit onboarding:', err);
