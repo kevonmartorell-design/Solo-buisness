@@ -111,6 +111,14 @@ const Employees = () => {
         : 0;
     const expiringCerts = employees.filter(e => e.certifications.some(c => c.status === 'expiring' || c.status === 'expired')).length;
 
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const joinedThisMonth = employees.filter(e => {
+        const d = new Date(e.joinDate);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    }).length;
+    const headcountTrend = joinedThisMonth > 0 ? `+${joinedThisMonth} this month` : undefined;
+
     // Loading State
     if (loading) {
         return (
@@ -153,14 +161,14 @@ const Employees = () => {
                 <KPICard
                     title="Total Headcount"
                     value={totalEmployees.toString()}
-                    trend="+2 this month"
+                    trend={headcountTrend}
                     icon={Users}
                     color="blue"
                 />
                 <KPICard
                     title="Active Now"
                     value={activeNow.toString()}
-                    subtext={`${Math.round((activeNow / totalEmployees) * 100)}% coverage`}
+                    subtext={`${totalEmployees > 0 ? Math.round((activeNow / totalEmployees) * 100) : 0}% coverage`}
                     icon={Clock}
                     color="emerald"
                     active
@@ -168,7 +176,6 @@ const Employees = () => {
                 <KPICard
                     title="Avg Efficiency"
                     value={`${avgEfficiency}%`}
-                    trend="+4.2% vs last week"
                     icon={TrendingUp}
                     color="orange"
                 />
