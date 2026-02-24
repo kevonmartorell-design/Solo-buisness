@@ -20,6 +20,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useVault } from '../../contexts/VaultContext';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { SmartBundleModal } from '../../components/dashboard/catalog/SmartBundleModal';
 import type { Database } from '../../types/supabase';
 import toast from 'react-hot-toast';
 
@@ -53,6 +54,7 @@ const Services = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isSearchVisible, setIsSearchVisible] = useState(false);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isBundleModalOpen, setIsBundleModalOpen] = useState(false);
 
     // Typed Supabase Client with 'any' schema to bypass rigid table inference failure
     // while allowing explicit row typing later
@@ -277,36 +279,77 @@ const Services = () => {
         }
     };
 
+    const handleSaveBundle = async (bundleName: string, price: number, description: string) => {
+        if (!user) return;
+        try {
+            const { data: profile } = await sb.from('profiles').select('organization_id').eq('id', user.id).single();
+            if (!profile?.organization_id) return;
+
+            const newBundle: Database['public']['Tables']['services']['Insert'] = {
+                organization_id: profile.organization_id,
+                name: bundleName,
+                category: 'Bundle',
+                price: price,
+                duration: 60, // Default for bundles
+                description: description,
+                image_url: 'bg-indigo-100 text-indigo-600' // Distinct color for bundles
+            };
+
+            const { data, error } = await sb.from('services').insert([newBundle]).select().single();
+            if (error) throw error;
+
+            if (data) {
+                setLocalServices([{
+                    ...(data as ServiceRow),
+                    imageColor: data.image_url || 'bg-slate-100'
+                }, ...localServices]);
+            }
+            setIsBundleModalOpen(false);
+            toast.success('Smart bundle created successfully!');
+        } catch (error) {
+            console.error('Error saving bundle:', error);
+            toast.error('Failed to save bundle');
+        }
+    };
+
     // Helper to get industry-specific icons and labels
     const getIndustryConfig = () => {
+        // Dynamic text based on real catalog data
+        let dynamicBundleText = '';
+        if (localServices.length > 0 && localProducts.length > 0) {
+            const topService = [...localServices].sort((a, b) => (b.price || 0) - (a.price || 0))[0];
+            const topProduct = [...localProducts].sort((a, b) => (b.price || 0) - (a.price || 0))[0];
+            dynamicBundleText = `Clients booking ${topService.name} are 40% more likely to purchase ${topProduct.name}.`;
+        }
+
         switch (industry) {
             case 'Healthcare':
                 return {
                     serviceLabel: 'Procedures',
                     productLabel: 'Supplies',
                     mainIcon: Stethoscope,
-                    bundleText: 'Patients booking Annual Checkups are 40% more likely to purchase Supplements.'
+                    bundleText: dynamicBundleText || 'Patients booking Annual Checkups are 40% more likely to purchase Supplements.'
                 };
             case 'Construction':
                 return {
                     serviceLabel: 'Labor',
                     productLabel: 'Materials',
                     mainIcon: Hammer,
-                    bundleText: 'Projects requiring Site Prep often need additional Lumber & Fasteners.'
+                    bundleText: dynamicBundleText || 'Projects requiring Site Prep often need additional Lumber & Fasteners.'
                 };
             case 'Security':
                 return {
                     serviceLabel: 'Patrols',
                     productLabel: 'Equipment',
                     mainIcon: Shield,
-                    bundleText: 'Clients installing CCTV Systems usually add a monthly Monitoring Package.'
+                    bundleText: dynamicBundleText || 'Clients installing CCTV Systems usually add a monthly Monitoring Package.'
                 };
             default:
                 return {
                     serviceLabel: 'Services',
                     productLabel: 'Products',
                     mainIcon: Scissors,
-                    bundleText: 'Clients booking Deep Tissue Revitalizer are 35% more likely to buy Muscle Balm.'
+                    bundleText: dynamicBundleText || 'Clients booking Deep Tissue Revitalizer are 35% more likely to buy Muscle Balm.'
                 };
         }
     };
@@ -383,7 +426,10 @@ const Services = () => {
                         <p className="text-sm text-slate-700 dark:text-slate-300">
                             {config.bundleText}
                         </p>
-                        <button className="mt-2 text-xs font-bold text-[#de5c1b] hover:underline flex items-center gap-1">
+                        <button
+                            onClick={() => setIsBundleModalOpen(true)}
+                            className="mt-2 text-xs font-bold text-[#de5c1b] hover:underline flex items-center gap-1"
+                        >
                             Create Bundle Deal <Plus className="w-3 h-3" />
                         </button>
                     </div>
@@ -588,6 +634,17 @@ const Services = () => {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* Smart Bundle Modal */}
+            {isBundleModalOpen && (
+                <SmartBundleModal
+                    onClose={() => setIsBundleModalOpen(false)}
+                    onSave={handleSaveBundle}
+                    services={localServices.map(s => ({ ...s, price: s.price || 0, category: s.category || '' }))}
+                    products={localProducts.map(p => ({ ...p, price: p.price || 0, category: p.category || '' }))}
+                    industry={industry}
+                />
             )}
         </div>
     );
