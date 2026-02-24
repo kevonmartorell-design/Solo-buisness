@@ -60,6 +60,18 @@ const StoreManagerView = () => {
                     .eq('organization_id', (profile as any).organization_id)
                     .neq('status', 'cancelled');
 
+                // 3. Fetch Ratings/Reviews
+                const { data: reviews } = await supabase
+                    .from('ratings_reviews')
+                    .select('rating')
+                    .eq('organization_id', (profile as any).organization_id);
+
+                // 4. Fetch Expenses (for Labor calculation)
+                const { data: expenses } = await supabase
+                    .from('expenses')
+                    .select('amount, category')
+                    .eq('organization_id', (profile as any).organization_id);
+
                 if (bookings && bookings.length > 0) {
                     // Calculate Today's Sales
                     const today = new Date().toDateString();
@@ -70,11 +82,22 @@ const StoreManagerView = () => {
                     const totalRevenue = bookings.reduce((sum, b: any) => sum + (b.service?.price || 0), 0);
                     const avgTicket = bookings.length > 0 ? totalRevenue / bookings.length : 0;
 
+                    // Calculate Avg Rating
+                    const totalRatings = reviews?.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) || 0;
+                    const avgRating = reviews && reviews.length > 0 ? (totalRatings / reviews.length).toFixed(1) : '5.0';
+
+                    // Calculate Labor %
+                    const laborExpenses = expenses?.filter((e: any) => e.category === 'Labor') || [];
+                    const totalLaborCost = laborExpenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+
+                    // If no labor explicitly tracked, we use 0 or a projected baseline. Let's stick with actual data (0 if not tracked).
+                    const actualLaborPercent = totalRevenue > 0 ? (totalLaborCost / totalRevenue) * 100 : 0;
+
                     setStats({
                         todaySales: todayRevenue,
-                        laborPercent: 28.5, // Mock for now
+                        laborPercent: actualLaborPercent,
                         avgTicket: avgTicket,
-                        custSatisfaction: 4.9 // Mock
+                        custSatisfaction: parseFloat(avgRating)
                     });
 
                     // Generate Chart Data (Last 7 Days)
@@ -120,6 +143,7 @@ const StoreManagerView = () => {
 
     // Derived P&L
     const grossRevenue = stats.todaySales;
+    // Labor cost is now actual cost, so laborPercent reflects the truth. If you want daily est, it's (actual labor % of total rev) * daily rev.
     const laborCost = grossRevenue * (stats.laborPercent / 100);
     const cogs = grossRevenue * 0.15; // Est 15%
     const netProfit = grossRevenue - laborCost - cogs;
@@ -129,9 +153,9 @@ const StoreManagerView = () => {
             {/* Store KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <AnalyticsCard title="Today's Sales" value={`$${stats.todaySales.toFixed(2)}`} trend={stats.todaySales > 0 ? "Active" : "No Activity"} icon={DollarSign} />
-                <AnalyticsCard title="Labor %" value={`${stats.laborPercent.toFixed(1)}%`} trend="Est." icon={Users} inverseTrend />
+                <AnalyticsCard title="Labor %" value={`${stats.laborPercent.toFixed(1)}%`} trend="Actual" icon={Users} inverseTrend />
                 <AnalyticsCard title="Avg Ticket" value={`$${stats.avgTicket.toFixed(0)}`} trend="Global" icon={Target} />
-                <AnalyticsCard title="Cust. Satisfaction" value={`${stats.custSatisfaction}/5`} trend="Stable" icon={Award} />
+                <AnalyticsCard title="Cust. Satisfaction" value={`${stats.custSatisfaction.toFixed(1)}/5`} trend={stats.custSatisfaction >= 4.5 ? "Excellent" : "Stable"} icon={Award} />
             </div>
 
             {/* Labor vs Revenue Chart */}
