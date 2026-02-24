@@ -47,38 +47,27 @@ const AddEmployeeModal = ({ isOpen, onClose, onSuccess }: AddEmployeeModalProps)
                 throw new Error('Organization not found');
             }
 
-            // 2. Attempt to create profile directly
-            // Note: This might fail if RLS or FK constraints require an auth.users record first.
-            // In a real app, you'd likely use an invite system (supabase.auth.admin.inviteUserByEmail)
-            // or a database function that handles the auth user creation.
-            // For now, we will try to insert into profiles.
-
-            const fullName = `${formData.firstName} ${formData.lastName}`.trim();
-
-            const { error: insertError } = await supabase
-                .from('profiles')
-                .insert({
-                    // Generate a random ID since we can't create an auth user from client easily without admin SDK
-                    // In production, this ID should come from auth.users
-                    id: crypto.randomUUID(),
-                    organization_id: profile.organization_id,
-                    name: fullName,
+            // Call the secure Edge Function to handle Auth User creation and Profile insertion
+            const { data, error: functionError } = await supabase.functions.invoke('invite-employee', {
+                body: {
                     email: formData.email,
-                    phone: formData.phone,
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
                     role: formData.role,
                     department: formData.department,
-                    status: 'active',
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                } as any);
-
-            if (insertError) {
-                // If the error is related to foreign key constraint on auth.users (likely),
-                // we need to inform the user.
-                if (insertError.code === '23503') { // foreign_key_violation
-                    throw new Error('Cannot create employee without a registered user account. Invite system coming soon.');
+                    phone: formData.phone,
+                    organization_id: profile.organization_id
                 }
-                throw insertError;
+            });
+
+            if (functionError) {
+                console.error("Function error:", functionError);
+                throw new Error("Failed to invite employee. Please contact support.");
+            }
+
+            if (data?.error) {
+                console.error("API error:", data.error);
+                throw new Error(data.error);
             }
 
             onSuccess();
