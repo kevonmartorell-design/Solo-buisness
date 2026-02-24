@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { useSidebar } from '../../contexts/SidebarContext';
 import Billing from '../../components/dashboard/settings/Billing';
 import TierUpgradeModal from '../../components/dashboard/settings/TierUpgradeModal';
+import FinancialLinkingModal from '../../components/dashboard/settings/FinancialLinkingModal';
 import type { Tier } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 // import type { Database } from '../../types/supabase';
@@ -49,6 +50,13 @@ const Settings = () => {
     // Tier Upgrade Modal State
     const [isTierModalOpen, setIsTierModalOpen] = useState(false);
     const [pendingTier, setPendingTier] = useState<Tier | null>(null);
+
+    // Financial Linking State
+    const [linkedAccounts, setLinkedAccounts] = useState([
+        { id: '1', type: 'bank', name: 'Global Commerce Bank', desc: 'Main Checking', icon: 'Landmark', color: 'blue' },
+        { id: '2', type: 'card', name: 'Titanium Card', desc: 'Credit Line', icon: 'CreditCard', color: 'green' }
+    ]);
+    const [isFinancialModalOpen, setIsFinancialModalOpen] = useState(false);
 
     const handleAddCategory = () => {
         if (newCatName.trim()) {
@@ -331,27 +339,19 @@ const Settings = () => {
                 <section className="mt-8">
                     <h2 className="px-6 text-[10px] font-bold text-[#de5c1b] uppercase tracking-[0.2em] mb-2">Financial Linking</h2>
                     <div className="bg-white/5 dark:bg-white/5 mx-4 rounded-xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white dark:bg-transparent">
-                        <div className="flex items-center gap-4 px-4 py-4 border-b border-gray-100 dark:border-white/5">
-                            <div className="bg-blue-500/20 p-2 rounded-lg text-blue-400">
-                                <Landmark className="w-6 h-6" />
+                        {linkedAccounts.map(account => (
+                            <div key={account.id} className="flex items-center gap-4 px-4 py-4 border-b border-gray-100 dark:border-white/5">
+                                <div className={`bg-${account.color}-500/20 p-2 rounded-lg text-${account.color}-400`}>
+                                    {account.type === 'bank' ? <Landmark className="w-6 h-6 text-blue-500" /> : <CreditCard className="w-6 h-6 text-green-500" />}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium">{account.name}</p>
+                                    <p className="text-xs text-gray-500">Connected: {account.desc}</p>
+                                </div>
+                                <ChevronRight className="text-gray-500 w-5 h-5" />
                             </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium">Global Commerce Bank</p>
-                                <p className="text-xs text-gray-500">Connected: Main Checking</p>
-                            </div>
-                            <ChevronRight className="text-gray-500 w-5 h-5" />
-                        </div>
-                        <div className="flex items-center gap-4 px-4 py-4 border-b border-gray-100 dark:border-white/5">
-                            <div className="bg-green-500/20 p-2 rounded-lg text-green-400">
-                                <CreditCard className="w-6 h-6" />
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium">Titanium Card</p>
-                                <p className="text-xs text-gray-500">Connected: Credit Line</p>
-                            </div>
-                            <ChevronRight className="text-gray-500 w-5 h-5" />
-                        </div>
-                        <button className="w-full flex items-center justify-center gap-2 px-4 py-4 text-sm font-semibold text-[#de5c1b] hover:bg-[#de5c1b]/5 transition-colors">
+                        ))}
+                        <button onClick={() => setIsFinancialModalOpen(true)} className="w-full flex items-center justify-center gap-2 px-4 py-4 text-sm font-semibold text-[#de5c1b] hover:bg-[#de5c1b]/5 transition-colors">
                             <PlusCircle className="w-5 h-5" />
                             Add New Institution
                         </button>
@@ -882,6 +882,20 @@ const Settings = () => {
                     currentTier={user?.tier || 'Free'}
                     targetTier={pendingTier}
                 />
+            )}
+
+            {/* Financial Linking Modal */}
+            {isFinancialModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <FinancialLinkingModal
+                        onClose={() => setIsFinancialModalOpen(false)}
+                        onAdd={(account) => {
+                            setLinkedAccounts([...linkedAccounts, { ...account, id: Date.now().toString() }]);
+                            setIsFinancialModalOpen(false);
+                            toast.success(`Connected ${account.name} successfully.`);
+                        }}
+                    />
+                </div>
             )}
         </div>
     );
