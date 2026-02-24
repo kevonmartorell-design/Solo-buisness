@@ -167,9 +167,9 @@ const StoreManagerView = () => {
                         <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-blue-500 rounded-full"></span><span className="text-xs text-slate-500">Labor %</span></div>
                     </div>
                 </div>
-                <div className="h-80">
+                <div className="h-[320px] min-h-[320px] w-full">
                     {chartData.length > 0 && chartData.some(d => d.revenue > 0) ? (
-                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <ComposedChart data={chartData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
                                 <XAxis dataKey="day" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />

@@ -122,8 +122,8 @@ const AssociateView = () => {
                 {/* Goals Progress */}
                 <div className="bg-white dark:bg-[#1c1917] p-6 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm flex flex-col items-center justify-center">
                     <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-4 w-full text-left">Weekly Bonus Goals</h3>
-                    <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                    <div className="h-[320px] min-h-[320px] w-full">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <RadialBarChart innerRadius="20%" outerRadius="100%" data={ASSOCIATE_GOALS} startAngle={180} endAngle={0}>
                                 <RadialBar background dataKey="value" cornerRadius={10} label={{ position: 'insideStart', fill: '#fff', fontSize: 10, fontWeight: 'bold' }} />
                                 <Legend iconSize={10} layout="vertical" verticalAlign="middle" wrapperStyle={{ right: 0 }} />

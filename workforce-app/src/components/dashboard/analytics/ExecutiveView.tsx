@@ -148,9 +148,9 @@ const ExecutiveView = () => {
             {/* Revenue Forecast Chart */}
             <div className="bg-white dark:bg-[#1c1917] p-6 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-6">Revenue Forecast (Next Quarter)</h3>
-                <div className="h-80">
+                <div className="h-[320px] min-h-[320px] w-full">
                     {forecastData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <ComposedChart data={forecastData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
                                 <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
@@ -173,9 +173,9 @@ const ExecutiveView = () => {
             {/* Multi-Unit Chart */}
             <div className="bg-white dark:bg-[#1c1917] p-6 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-6">Department Performance Comparison</h3>
-                <div className="h-80">
+                <div className="h-[320px] min-h-[320px] w-full">
                     {deptPerformance.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <BarChart data={deptPerformance}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
                                 <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />

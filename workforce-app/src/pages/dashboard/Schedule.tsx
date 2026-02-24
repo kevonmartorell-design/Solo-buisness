@@ -116,7 +116,7 @@ const Schedule = () => {
                         notes,
                         service:services(name, duration) 
                     `)
-                    .eq('organization_id', orgId);
+                    .eq('organization_id', organizationId);
 
                 const mappedEvents: Event[] = bookings?.map((b: any) => {
                     const startTime = new Date(b.booking_datetime);
@@ -157,6 +157,9 @@ const Schedule = () => {
         fetchScheduleData();
 
         // --- Realtime Subscription ---
+        // Wait until we have the orgId to subscribe, otherwise we might subscribe to nothing or everything
+        if (!orgId) return;
+
         const channel = supabase
             .channel('public:bookings')
             .on(
@@ -165,12 +168,7 @@ const Schedule = () => {
                     event: '*',
                     schema: 'public',
                     table: 'bookings',
-                    filter: `organization_id=eq.${orgId || (user as any)?.user_metadata?.organization_id}` // Filter by Org if possible, but orgId might be null initially. 
-                    // Best practice: Filter by org_id in RLS, but for realtime we filter payload if possible or just refetch.
-                    // Since Row Level Security (RLS) is on, specific filtering in the channel definition 
-                    // acts as an additional layer but the client only receives what it's allowed to see if "broadcast" is not used.
-                    // However, for "postgres_changes", we receive events.
-                    // Let's just listen to all changes and filter in callback or just refetch. Refetch is safer for consistency.
+                    filter: `organization_id=eq.${orgId}`
                 },
                 (payload) => {
 
