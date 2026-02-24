@@ -49,7 +49,7 @@ const Landing = () => {
                     <div className="relative z-10 max-w-5xl w-full text-center">
                         <div className="mb-12 flex justify-center">
                             <div className="relative flex items-center justify-center">
-                                <img src="/aegis-logo.png" alt="Aegis Cert" className="w-[200px] md:w-[280px] h-auto object-contain" />
+                                <img src="/aegis-logo.png" alt="Aegis Cert" className="w-[400px] md:w-[560px] h-auto object-contain" />
                             </div>
                         </div>
                         <h1 className="text-5xl md:text-8xl font-black text-white leading-[1.1] tracking-tighter mb-6 uppercase">
