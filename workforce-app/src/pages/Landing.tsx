@@ -48,13 +48,8 @@ const Landing = () => {
                     </div>
                     <div className="relative z-10 max-w-5xl w-full text-center">
                         <div className="mb-12 flex justify-center">
-                            <div className="relative w-48 h-48 md:w-64 md:h-64 flex items-center justify-center">
-                                <div className="absolute inset-0 border-2 border-[#de5c1b]/30 rounded-full animate-pulse"></div>
-                                <div className="absolute inset-4 border border-white/20 rounded-full"></div>
-                                <img src="/aegis-logo.png" alt="Aegis Cert" className="w-[100px] md:w-[140px] h-auto object-contain" />
-                                <div className="absolute bottom-0 bg-[#181311] px-4 border border-white/20 py-1 rounded-full text-[10px] uppercase tracking-[0.3em] text-white/60 font-bold">
-                                    Operational OS
-                                </div>
+                            <div className="relative flex items-center justify-center">
+                                <img src="/aegis-logo.png" alt="Aegis Cert" className="w-[200px] md:w-[280px] h-auto object-contain" />
                             </div>
                         </div>
                         <h1 className="text-5xl md:text-8xl font-black text-white leading-[1.1] tracking-tighter mb-6 uppercase">
