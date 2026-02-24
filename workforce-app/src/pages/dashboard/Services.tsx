@@ -13,7 +13,8 @@ import {
     X,
     Hammer,
     Stethoscope,
-    Shield
+    Shield,
+    Image as ImageIcon
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -62,6 +63,23 @@ const Services = () => {
     const [newItemPrice, setNewItemPrice] = useState('');
     const [newItemCategory, setNewItemCategory] = useState('');
     const [newItemExtra, setNewItemExtra] = useState(''); // Duration or Stock
+    const [newItemImage, setNewItemImage] = useState<string | null>(null);
+
+    // Image Upload Handler
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                toast.error("Image must be less than 2MB");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setNewItemImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     // Load data
     useEffect(() => {
@@ -198,7 +216,7 @@ const Services = () => {
                     price: parseFloat(newItemPrice),
                     duration: parseInt(newItemExtra) || 60,
                     description: 'Newly added service.',
-                    image_url: 'bg-emerald-100 text-emerald-600' // Default color
+                    image_url: newItemImage || 'bg-emerald-100 text-emerald-600' // Default color if no image
                 };
 
                 const { data, error } = await sb
@@ -225,7 +243,7 @@ const Services = () => {
                     reorder_point: 5,
                     sku: `NEW-${Date.now().toString().slice(-4)}`,
                     description: 'Newly added product.',
-                    image_url: 'bg-blue-100 text-blue-600'
+                    image_url: newItemImage || 'bg-blue-100 text-blue-600'
                 };
 
                 const { data, error } = await sb
@@ -250,6 +268,7 @@ const Services = () => {
             setNewItemPrice('');
             setNewItemCategory('');
             setNewItemExtra('');
+            setNewItemImage(null);
             setIsAddModalOpen(false);
 
         } catch (error) {
@@ -382,10 +401,16 @@ const Services = () => {
                         {filteredServices.map(service => (
                             <div key={service.id} className="group relative overflow-hidden rounded-xl bg-white dark:bg-[#2a1d17] border border-[#de5c1b]/5 shadow-sm hover:border-[#de5c1b]/30 transition-all">
                                 <div className="flex flex-col md:flex-row">
-                                    <div className={`h-32 md:h-auto md:w-32 ${service.imageColor} flex-shrink-0 flex items-center justify-center text-slate-400 font-bold text-2xl`}>
-                                        {/* Placeholder Image */}
-                                        {service.name.charAt(0)}
-                                    </div>
+                                    {service.imageColor && service.imageColor.startsWith('data:image') ? (
+                                        <div className="h-32 md:h-auto md:w-32 flex-shrink-0 flex items-center justify-center relative overflow-hidden">
+                                            <img src={service.imageColor} alt={service.name} className="absolute inset-0 w-full h-full object-cover" />
+                                        </div>
+                                    ) : (
+                                        <div className={`h-32 md:h-auto md:w-32 ${service.imageColor} flex-shrink-0 flex items-center justify-center text-slate-400 font-bold text-2xl`}>
+                                            {/* Placeholder Image */}
+                                            {service.name.charAt(0)}
+                                        </div>
+                                    )}
                                     <div className="flex-1 p-5 flex flex-col justify-between">
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
@@ -415,15 +440,27 @@ const Services = () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {filteredProducts.map(product => (
                             <div key={product.id} className="bg-white dark:bg-[#2a1d17] rounded-xl border border-[#de5c1b]/5 shadow-sm p-4 hover:border-[#de5c1b]/30 transition-all flex flex-col">
-                                <div className={`aspect-square ${product.imageColor} rounded-lg mb-4 flex items-center justify-center text-slate-400 font-bold text-xl relative`}>
-                                    {product.name.charAt(0)}
-                                    {product.stock <= product.reorder_point && (
-                                        <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                                            <AlertTriangle className="w-3 h-3" />
-                                            Low Stock
-                                        </div>
-                                    )}
-                                </div>
+                                {product.imageColor && product.imageColor.startsWith('data:image') ? (
+                                    <div className="aspect-square rounded-lg mb-4 relative overflow-hidden">
+                                        <img src={product.imageColor} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
+                                        {product.stock <= product.reorder_point && (
+                                            <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 z-10">
+                                                <AlertTriangle className="w-3 h-3" />
+                                                Low Stock
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className={`aspect-square ${product.imageColor} rounded-lg mb-4 flex items-center justify-center text-slate-400 font-bold text-xl relative`}>
+                                        {product.name.charAt(0)}
+                                        {product.stock <= product.reorder_point && (
+                                            <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                <AlertTriangle className="w-3 h-3" />
+                                                Low Stock
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="flex-1">
                                     <div className="flex justify-between items-start mb-1">
                                         <h3 className="font-bold text-sm text-slate-900 dark:text-white line-clamp-2">{product.name}</h3>
@@ -467,7 +504,34 @@ const Services = () => {
                                     <X className="w-6 h-6 text-gray-500" />
                                 </button>
                             </div>
-                            <div className="p-4 space-y-4">
+                            <div className="p-4 space-y-4 max-h-[80vh] overflow-y-auto">
+                                {/* Image Upload */}
+                                <div className="flex flex-col items-center justify-center bg-gray-50 dark:bg-white/5 border-2 border-dashed border-gray-200 dark:border-white/10 rounded-xl p-4 relative overflow-hidden group">
+                                    {newItemImage ? (
+                                        <>
+                                            <img src={newItemImage} alt="Preview" className="w-full h-32 object-cover rounded-lg" />
+                                            <button
+                                                onClick={() => setNewItemImage(null)}
+                                                className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full text-white hover:bg-black/70 transition-colors opacity-0 group-hover:opacity-100"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <label className="flex flex-col items-center justify-center w-full h-32 cursor-pointer">
+                                            <ImageIcon className="w-8 h-8 text-gray-400 mb-2 group-hover:text-[#de5c1b] transition-colors" />
+                                            <span className="text-xs font-bold text-gray-500 uppercase">Upload Photo</span>
+                                            <span className="text-[10px] text-gray-400 mt-1">PNG, JPG up to 2MB</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handleImageUpload}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
                                     <input
