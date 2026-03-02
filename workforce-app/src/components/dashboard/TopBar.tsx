@@ -3,13 +3,13 @@
 import { useSidebar } from '../../contexts/SidebarContext';
 
 const TopBar = () => {
-    const { toggleSidebar } = useSidebar();
+    const { toggleSidebar, isSidebarOpen } = useSidebar();
 
     return (
         <header className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#181311]/80 sticky top-0 z-40 backdrop-blur-md">
-            <div className="flex items-center gap-4 md:hidden">
-                <button onClick={toggleSidebar} className="size-10 flex items-center justify-center text-primary">
-                    <span className="material-symbols-outlined text-2xl">menu</span>
+            <div className={`flex items-center gap-4 ${isSidebarOpen ? 'md:hidden' : ''}`}>
+                <button onClick={toggleSidebar} className="size-10 flex items-center justify-center text-primary group">
+                    <span className="material-symbols-outlined text-2xl group-hover:bg-white/10 rounded-lg p-1 transition-all">menu</span>
                 </button>
             </div>
 

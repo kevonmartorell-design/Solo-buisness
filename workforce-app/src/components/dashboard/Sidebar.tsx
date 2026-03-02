@@ -47,7 +47,7 @@ const Sidebar = () => {
                 </div>
                 <button
                     onClick={closeSidebar}
-                    className="md:hidden size-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                    className="size-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
                 >
                     <span className="material-symbols-outlined text-xl">menu_open</span>
                 </button>
