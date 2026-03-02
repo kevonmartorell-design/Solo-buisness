@@ -7,9 +7,15 @@ import { useBranding } from '../../contexts/BrandingContext';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Sidebar = () => {
-    const { isSidebarOpen } = useSidebar();
+    const { isSidebarOpen, closeSidebar } = useSidebar();
     const { companyName, logoUrl } = useBranding();
     const { user } = useAuth();
+
+    const handleNavClick = () => {
+        if (window.innerWidth < 768) {
+            closeSidebar();
+        }
+    };
 
     // ... navItems definition ...
     // ... navItems definition ...
@@ -34,9 +40,17 @@ const Sidebar = () => {
 
     return (
         <aside className={`fixed left-0 top-0 h-full w-72 bg-[#1c1917] border-r border-white/5 flex flex-col shadow-2xl z-50 transition-transform duration-300 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-            <div className="p-6 flex items-center gap-3 border-b border-white/5">
-                <img src={logoUrl || '/aegis-logo.png'} alt="Logo" className="w-8 h-8 object-contain" />
-                <span className="text-sm font-bold text-white uppercase tracking-wider">{companyName}</span>
+            <div className="p-6 flex items-center justify-between border-b border-white/5">
+                <div className="flex items-center gap-3">
+                    <img src={logoUrl || '/aegis-logo.png'} alt="Logo" className="w-8 h-8 object-contain" />
+                    <span className="text-sm font-bold text-white uppercase tracking-wider">{companyName}</span>
+                </div>
+                <button
+                    onClick={closeSidebar}
+                    className="md:hidden size-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                    <span className="material-symbols-outlined text-xl">menu_open</span>
+                </button>
             </div>
 
             <nav className="flex-1 overflow-y-auto p-4 space-y-6">
@@ -47,6 +61,7 @@ const Sidebar = () => {
                             <NavLink
                                 key={item.path}
                                 to={item.path}
+                                onClick={handleNavClick}
                                 className={({ isActive }) =>
                                     clsx(
                                         'flex items-center gap-3 px-4 py-3 rounded-xl transition-colors',
@@ -70,6 +85,7 @@ const Sidebar = () => {
                             <NavLink
                                 key={item.path}
                                 to={item.path}
+                                onClick={handleNavClick}
                                 className={({ isActive }) =>
                                     clsx(
                                         'flex items-center gap-3 px-4 py-3 rounded-xl transition-colors',
@@ -93,6 +109,7 @@ const Sidebar = () => {
                             <NavLink
                                 key={item.path}
                                 to={item.path}
+                                onClick={handleNavClick}
                                 className={({ isActive }) =>
                                     clsx(
                                         'flex items-center gap-3 px-4 py-3 rounded-xl transition-colors',

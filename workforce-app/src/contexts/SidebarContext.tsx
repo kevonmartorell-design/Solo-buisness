@@ -10,12 +10,12 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export const SidebarProvider = ({ children }: { children: ReactNode }) => {
-    // Default to open on desktop (we can refine this with media queries if needed, 
-    // but for now let's assume open and let the layout handle hiding on mobile via CSS if not toggled)
-    // Actually, to match current "hidden md:flex", desktop is open, mobile is closed.
-    // Let's rely on a state that represents "User INTENT".
-    // But for simplicity, let's start with true and adjust styling.
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth >= 768; // Open on desktop, closed on mobile
+        }
+        return true;
+    });
 
     const toggleSidebar = () => setIsSidebarOpen(prev => !prev);
     const closeSidebar = () => setIsSidebarOpen(false);

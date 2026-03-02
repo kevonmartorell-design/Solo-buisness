@@ -6,10 +6,18 @@ import TopBar from '../components/dashboard/TopBar';
 import { useSidebar } from '../contexts/SidebarContext';
 
 const DashboardLayout = () => {
-    const { isSidebarOpen } = useSidebar();
+    const { isSidebarOpen, closeSidebar } = useSidebar();
 
     return (
-        <div className="bg-[#181311] min-h-screen text-white flex font-display">
+        <div className="bg-[#181311] min-h-screen text-white flex font-display md:relative">
+            {/* Mobile Overlay */}
+            {isSidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+                    onClick={closeSidebar}
+                />
+            )}
+
             <Sidebar />
             <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'md:ml-72' : 'ml-0'}`}>
                 <TopBar />
