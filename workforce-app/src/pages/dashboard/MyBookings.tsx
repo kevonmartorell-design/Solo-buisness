@@ -6,7 +6,7 @@ import EventCard from '../../components/dashboard/schedule/EventCard';
 import type { Event } from '../../types/schedule';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { useNavigate } from 'react-router-dom';
-import { Menu, Calendar, Clock, History, Link as LinkIcon, Check, X, Inbox, CalendarPlus } from 'lucide-react';
+import { Menu, Calendar, Clock, History, Link as LinkIcon, Check, X, Inbox, CalendarPlus, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import CreateBookingModal from '../../components/dashboard/schedule/CreateBookingModal';
 
 const MyBookings = () => {
@@ -15,7 +15,8 @@ const MyBookings = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'requests'>('upcoming');
+    const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'requests' | 'schedule'>('upcoming');
+    const [selectedDate, setSelectedDate] = useState(new Date());
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     const [events, setEvents] = useState<Event[]>([]);
@@ -117,7 +118,7 @@ const MyBookings = () => {
 
             if (rpcError) throw rpcError;
 
-            
+
 
             // Notify client if they have a phone number
             if (req.client?.phone) {
@@ -180,6 +181,24 @@ const MyBookings = () => {
     const upcomingEvents = events.filter(e => e.date >= now);
     const pastEvents = events.filter(e => e.date < now).reverse();
 
+    const scheduleEvents = events.filter(e => {
+        return e.date.getFullYear() === selectedDate.getFullYear() &&
+            e.date.getMonth() === selectedDate.getMonth() &&
+            e.date.getDate() === selectedDate.getDate();
+    });
+
+    const isSameDay = (d1: Date, d2: Date) => {
+        return d1.getFullYear() === d2.getFullYear() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getDate() === d2.getDate();
+    };
+
+    const weekDays = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(selectedDate);
+        d.setDate(selectedDate.getDate() + i - 3); // Center around selectedDate
+        return d;
+    });
+
     return (
         <div className="bg-white dark:bg-[#181311] min-h-screen text-slate-900 dark:text-slate-100 flex flex-col font-display">
             {/* Header */}
@@ -218,6 +237,16 @@ const MyBookings = () => {
                     >
                         <Calendar className="w-4 h-4" />
                         Upcoming
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('schedule')}
+                        className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'schedule'
+                            ? 'bg-white dark:bg-[#2c2420] text-[#de5c1b] shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                            }`}
+                    >
+                        <CalendarDays className="w-4 h-4" />
+                        My Schedule
                     </button>
                     <button
                         onClick={() => setActiveTab('requests')}
@@ -311,6 +340,99 @@ const MyBookings = () => {
                                 <p className="text-slate-500 dark:text-slate-400">When clients book through your link, they'll appear here.</p>
                             </div>
                         )}
+                    </div>
+                ) : activeTab === 'schedule' ? (
+                    <div className="space-y-6">
+                        {/* Date Picker */}
+                        <div className="flex items-center justify-between mb-4">
+                            <button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d); }} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">
+                                <ChevronLeft className="w-5 h-5 text-slate-500" />
+                            </button>
+                            <div className="flex gap-2 overflow-x-auto custom-scrollbar px-2">
+                                {weekDays.map((date, index) => {
+                                    const isSelected = isSameDay(date, selectedDate);
+                                    return (
+                                        <div
+                                            key={index}
+                                            onClick={() => setSelectedDate(date)}
+                                            className={`flex-shrink-0 flex flex-col items-center justify-center w-12 h-14 rounded-xl cursor-pointer transition-all ${isSelected
+                                                ? 'bg-[#de5c1b] text-white shadow-lg shadow-[#de5c1b]/30 scale-105'
+                                                : 'bg-slate-50 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-slate-400'
+                                                }`}
+                                        >
+                                            <span className={`text-[10px] uppercase font-bold ${isSelected ? 'text-white' : 'text-slate-500'}`}>
+                                                {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                            </span>
+                                            <span className="text-sm font-bold">{date.getDate()}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d); }} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">
+                                <ChevronRight className="w-5 h-5 text-slate-500" />
+                            </button>
+                        </div>
+
+                        {/* Timeline View */}
+                        <div className="overflow-x-auto pb-4">
+                            <div className="min-w-[800px]">
+                                {/* Time Header */}
+                                <div className="grid grid-cols-[1fr] gap-4 mb-4 border-b border-slate-200 dark:border-white/10 pb-2">
+                                    <div className="grid grid-cols-12 text-center">
+                                        {['8AM', '9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM', '4PM', '5PM', '6PM', '7PM'].map(t => (
+                                            <div key={t} className="text-xs font-bold text-slate-400">{t}</div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Timeline Bar */}
+                                <div className="relative h-20 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/5">
+                                    {/* Render Grid Lines */}
+                                    <div className="absolute inset-0 grid grid-cols-12 pointer-events-none">
+                                        {Array.from({ length: 12 }).map((_, i) => (
+                                            <div key={i} className="border-r border-slate-200/50 dark:border-white/5 h-full"></div>
+                                        ))}
+                                    </div>
+
+                                    {/* Render Events */}
+                                    {scheduleEvents.map(event => {
+                                        const [startH, startM] = event.startTime.split(':').map(Number);
+                                        const [endH, endM] = event.endTime.split(':').map(Number);
+                                        const startMinsTotal = startH * 60 + startM;
+                                        const endMinsTotal = endH * 60 + endM;
+                                        const durationMins = endMinsTotal - startMinsTotal;
+
+                                        // offset from 8AM (480 mins)
+                                        const offsetMins = startMinsTotal - 480;
+                                        const leftPercent = Math.max(0, (offsetMins / (12 * 60)) * 100);
+                                        const widthPercent = Math.min(100 - leftPercent, (durationMins / (12 * 60)) * 100);
+
+                                        if (startMinsTotal >= 20 * 60 || endMinsTotal <= 8 * 60) return null; // Outside visible 8am-8pm
+
+                                        return (
+                                            <div
+                                                key={event.id}
+                                                className={`absolute top-2 bottom-2 rounded-lg px-3 py-1 flex flex-col justify-center shadow-sm transition-all hover:brightness-110 z-10 ${event.type === 'Shift' ? 'bg-indigo-500 text-white' :
+                                                    event.type === 'Strategy' ? 'bg-[#de5c1b] text-white' :
+                                                        event.type === 'TimeOff' ? 'bg-slate-400 text-white' :
+                                                            'bg-emerald-500 text-white'
+                                                    }`}
+                                                style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}
+                                            >
+                                                <span className="text-xs font-bold truncate leading-tight">{event.title}</span>
+                                                <span className="text-[10px] font-medium opacity-90 truncate leading-tight">{event.startTime} - {event.endTime}</span>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {scheduleEvents.length === 0 && (
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                            <span className="text-sm font-medium text-slate-400 italic">No schedules for selected date</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     /* Upcoming/Past Events */
