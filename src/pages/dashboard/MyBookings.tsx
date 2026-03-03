@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import EventCard from '../../components/dashboard/schedule/EventCard';
 import type { Event } from '../../types/schedule';
 import { useSidebar } from '../../contexts/SidebarContext';
-import { Menu, Calendar, Clock, History, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Menu, Calendar, Clock, History, CalendarDays, ChevronLeft, ChevronRight, Plus, Link as LinkIcon } from 'lucide-react';
 
 const MyBookings = () => {
     const { user } = useAuth();
@@ -151,7 +151,7 @@ const MyBookings = () => {
     return (
         <div className="bg-white dark:bg-[#181311] min-h-screen text-slate-900 dark:text-slate-100 flex flex-col font-display">
             {/* Header */}
-            <header className="sticky top-0 z-30 bg-white/80 dark:bg-[#181311]/80 backdrop-blur-md px-6 py-4 border-b border-slate-200 dark:border-white/10">
+            <header className="sticky top-0 z-30 bg-white/80 dark:bg-[#181311]/80 backdrop-blur-md px-6 py-4 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <button onClick={toggleSidebar} className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/5 transition-colors lg:hidden">
                         <Menu className="w-6 h-6" />
@@ -160,6 +160,27 @@ const MyBookings = () => {
                         <h1 className="text-2xl font-bold tracking-tight">My Bookings</h1>
                         <p className="text-xs text-slate-500 font-medium uppercase tracking-widest">Personal Schedule</p>
                     </div>
+                </div>
+                <div className="flex gap-3">
+                    {user?.tier !== 'Free' && (
+                        <button
+                            onClick={() => {
+                                // Fallback to user.id since orgId is not fetched here directly, or ideally use profile.organization_id.
+                                const url = `${window.location.origin}/booking/${user?.id}`;
+                                navigator.clipboard.writeText(url);
+                                alert('Booking link copied to clipboard!');
+                            }}
+                            className="hidden sm:flex px-4 py-2 border border-slate-200 dark:border-white/10 rounded-lg text-sm font-bold items-center gap-2 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors text-slate-700 dark:text-slate-300"
+                        >
+                            <LinkIcon className="w-4 h-4" /> Share Link
+                        </button>
+                    )}
+                    <button
+                        onClick={() => window.location.href = user?.tier === 'Free' ? '/dashboard' : '/schedule'}
+                        className="px-4 py-2 bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white rounded-lg text-sm font-bold shadow-lg shadow-[#de5c1b]/20 transition-all flex items-center gap-2"
+                    >
+                        <Plus className="w-4 h-4" /> New Booking
+                    </button>
                 </div>
             </header>
 
