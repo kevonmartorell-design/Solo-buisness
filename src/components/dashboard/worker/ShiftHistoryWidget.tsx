@@ -27,7 +27,7 @@ const ShiftHistoryWidget = () => {
             const { data, error } = await supabase
                 .from('time_entries')
                 .select('*')
-                .eq('employee_id', user?.id)
+                .eq('employee_id', user?.id || '')
                 .eq('status', 'completed')
                 .order('clock_out', { ascending: false })
                 .limit(5);

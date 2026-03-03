@@ -1,0 +1,29 @@
+src/components/dashboard/worker/AnnouncementsWidget.tsx(35,27): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/dashboard/worker/ClockInOutWidget.tsx(36,36): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/dashboard/worker/ClockInOutWidget.tsx(43,28): error TS2345: Argument of type '{ clock_in: string; clock_out: string | null; created_at: string | null; employee_id: string; id: string; organization_id: string; status: string; updated_at: string | null; } | null' is not assignable to parameter of type 'SetStateAction<TimeEntry | null>'.
+  Type '{ clock_in: string; clock_out: string | null; created_at: string | null; employee_id: string; id: string; organization_id: string; status: string; updated_at: string | null; }' is not assignable to type 'SetStateAction<TimeEntry | null>'.
+    Type '{ clock_in: string; clock_out: string | null; created_at: string | null; employee_id: string; id: string; organization_id: string; status: string; updated_at: string | null; }' is not assignable to type 'TimeEntry'.
+      Types of property 'status' are incompatible.
+        Type 'string' is not assignable to type '"completed" | "active"'.
+src/components/dashboard/worker/ClockInOutWidget.tsx(75,28): error TS2345: Argument of type '{ clock_in: string; clock_out: string | null; created_at: string | null; employee_id: string; id: string; organization_id: string; status: string; updated_at: string | null; }' is not assignable to parameter of type 'SetStateAction<TimeEntry | null>'.
+  Type '{ clock_in: string; clock_out: string | null; created_at: string | null; employee_id: string; id: string; organization_id: string; status: string; updated_at: string | null; }' is not assignable to type 'TimeEntry'.
+    Types of property 'status' are incompatible.
+      Type 'string' is not assignable to type '"completed" | "active"'.
+src/components/dashboard/worker/ShiftHistoryWidget.tsx(30,36): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/dashboard/worker/WorkerFinancialsWidget.tsx(35,36): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/public/PublicBooking.tsx(80,29): error TS2345: Argument of type '{ category: string | null; created_at: string; description: string | null; duration: number | null; id: string; image_url: string | null; name: string; organization_id: string; price: number | null; updated_at: string; }[]' is not assignable to parameter of type 'SetStateAction<Service[]>'.
+  Type '{ category: string | null; created_at: string; description: string | null; duration: number | null; id: string; image_url: string | null; name: string; organization_id: string; price: number | null; updated_at: string; }[]' is not assignable to type 'Service[]'.
+    Type '{ category: string | null; created_at: string; description: string | null; duration: number | null; id: string; image_url: string | null; name: string; organization_id: string; price: number | null; updated_at: string; }' is not assignable to type 'Service'.
+      Types of property 'duration' are incompatible.
+        Type 'number | null' is not assignable to type 'number'.
+          Type 'null' is not assignable to type 'number'.
+src/pages/public/PublicBooking.tsx(93,32): error TS2345: Argument of type '{ client_id: string | null; comment: string | null; created_at: string; employee_id: string | null; id: string; is_public: boolean | null; organization_id: string; photo_url: string | null; rating: number | null; response: string | null; testimonial_text: string | null; updated_at: string; }[]' is not assignable to parameter of type 'SetStateAction<Review[]>'.
+  Type '{ client_id: string | null; comment: string | null; created_at: string; employee_id: string | null; id: string; is_public: boolean | null; organization_id: string; photo_url: string | null; rating: number | null; response: string | null; testimonial_text: string | null; updated_at: string; }[]' is not assignable to type 'Review[]'.
+    Type '{ client_id: string | null; comment: string | null; created_at: string; employee_id: string | null; id: string; is_public: boolean | null; organization_id: string; photo_url: string | null; rating: number | null; response: string | null; testimonial_text: string | null; updated_at: string; }' is not assignable to type 'Review'.
+      Types of property 'rating' are incompatible.
+        Type 'number | null' is not assignable to type 'number'.
+          Type 'null' is not assignable to type 'number'.

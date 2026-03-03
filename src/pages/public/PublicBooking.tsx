@@ -77,7 +77,7 @@ const PublicBooking = () => {
                     .eq('organization_id', orgTyped.id);
 
                 if (servicesError) throw servicesError;
-                setServices(servicesData || []);
+                setServices((servicesData as unknown as Service[]) || []);
 
                 // 3. Fetch Reviews (Top rated, public)
                 const { data: reviewsData, error: reviewsError } = await supabase
@@ -90,7 +90,7 @@ const PublicBooking = () => {
                     .limit(4);
 
                 if (!reviewsError) {
-                    setReviews(reviewsData || []);
+                    setReviews((reviewsData as unknown as Review[]) || []);
                 }
 
             } catch (err) {

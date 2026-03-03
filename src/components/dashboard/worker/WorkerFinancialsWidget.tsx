@@ -32,7 +32,7 @@ const WorkerFinancialsWidget = () => {
             const { data, error } = await supabase
                 .from('time_entries')
                 .select('clock_in, clock_out, status')
-                .eq('employee_id', user?.id)
+                .eq('employee_id', user?.id || '')
                 .gte('clock_in', start)
                 .lte('clock_in', end)
                 .eq('status', 'completed');

@@ -33,14 +33,14 @@ const ClockInOutWidget = () => {
             const { data, error } = await supabase
                 .from('time_entries')
                 .select('*')
-                .eq('employee_id', user?.id)
+                .eq('employee_id', user?.id || '')
                 .eq('status', 'active')
                 .order('clock_in', { ascending: false })
                 .limit(1)
                 .single();
 
             if (error && error.code !== 'PGRST116') throw error;
-            setActiveEntry(data || null);
+            setActiveEntry((data as TimeEntry) || null);
         } catch (error) {
             console.error('Error fetching time entry:', error);
         } finally {
@@ -72,7 +72,7 @@ const ClockInOutWidget = () => {
                 .single();
 
             if (error) throw error;
-            setActiveEntry(data);
+            setActiveEntry(data as TimeEntry);
         } catch (error) {
             console.error('Error clocking in:', error);
         } finally {
