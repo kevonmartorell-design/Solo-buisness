@@ -474,7 +474,7 @@ const PublicBooking = () => {
             {/* Success Modal Overlay */}
             {success && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-                    <div className="w-full max-w-md bg-white dark:bg-[#211611] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-white/10 relative">
+                    <div className="w-full max-w-md max-h-[90dvh] overflow-y-auto custom-scrollbar bg-white dark:bg-[#211611] rounded-3xl shadow-2xl flex flex-col border border-slate-200 dark:border-white/10 relative">
                         <button
                             onClick={() => window.location.reload()}
                             className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors z-10 bg-slate-100 dark:bg-white/10 p-2 rounded-full"
@@ -483,8 +483,8 @@ const PublicBooking = () => {
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
 
-                        <div className="p-8 pb-6 text-center border-b border-slate-100 dark:border-white/5 relative bg-white dark:bg-[#211611]">
-                            <div className="w-20 h-20 bg-green-50 dark:bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                        <div className="p-6 sm:p-8 pb-6 text-center border-b border-slate-100 dark:border-white/5 relative bg-white dark:bg-[#211611]">
+                            <div className="w-20 h-20 bg-green-50 dark:bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner shrink-0">
                                 <Check className="w-10 h-10" />
                             </div>
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">Booking Requested!</h2>
@@ -500,7 +500,7 @@ const PublicBooking = () => {
                         </div>
 
                         {/* Account Creation CTA */}
-                        <div className="bg-gradient-to-br from-[#de5c1b]/10 to-[#de5c1b]/5 dark:from-[#de5c1b]/20 dark:to-[#1a110d] p-8 text-center animate-fade-in block">
+                        <div className="bg-gradient-to-br from-[#de5c1b]/10 to-[#de5c1b]/5 dark:from-[#de5c1b]/20 dark:to-[#1a110d] p-6 sm:p-8 text-center animate-fade-in block shrink-0">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Track Your Request</h3>
                             <p className="text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
                                 Create a free client account to view your upcoming bookings, message {org?.business_name}, and manage your schedule.
