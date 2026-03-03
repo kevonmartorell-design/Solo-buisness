@@ -9,6 +9,7 @@ interface User {
     name: string;
     role: Role;
     tier: Tier;
+    email: string;
     onboardingComplete?: boolean;
 }
 
@@ -31,7 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Check active session
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session?.user) {
-                fetchProfile(session.user.id);
+                fetchProfile(session.user.id, session.user.email || '');
             } else {
                 setLoading(false);
             }
@@ -39,7 +40,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             if (session?.user) {
-                fetchProfile(session.user.id);
+                fetchProfile(session.user.id, session.user.email || '');
             } else {
                 setUser(null);
                 setLoading(false);
@@ -49,7 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return () => subscription.unsubscribe();
     }, []);
 
-    const fetchProfile = async (userId: string) => {
+    const fetchProfile = async (userId: string, email: string) => {
         try {
             const { data: profile, error } = await (supabase as any)
                 .from('profiles')
@@ -81,6 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     name: profile.full_name || 'User',
                     role,
                     tier,
+                    email: email,
                     onboardingComplete: !!profile.organizations?.onboarding_complete
                 });
             }
@@ -96,7 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const login = async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-            await fetchProfile(session.user.id);
+            await fetchProfile(session.user.id, session.user.email || '');
         }
     };
 

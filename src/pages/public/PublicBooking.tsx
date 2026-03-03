@@ -215,20 +215,36 @@ const PublicBooking = () => {
 
     if (success) {
         return (
-            <div className="max-w-md mx-auto bg-white dark:bg-[#211611] p-8 rounded-2xl shadow-xl text-center animate-fade-in border border-[#de5c1b]/10">
-                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Check className="w-8 h-8" />
+            <div className="max-w-md mx-auto p-4 sm:p-8">
+                <div className="bg-white dark:bg-[#211611] p-8 rounded-2xl shadow-xl text-center animate-fade-in border border-[#de5c1b]/10 mb-6">
+                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Check className="w-8 h-8" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Booking Requested!</h2>
+                    <p className="text-slate-600 dark:text-slate-300 mb-6">
+                        Thanks {clientDetails.name}, your request for <strong>{selectedService?.name}</strong> has been sent to {org.business_name}.
+                    </p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="text-[#de5c1b] font-bold hover:underline"
+                    >
+                        Book Another Service
+                    </button>
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Booking Requested!</h2>
-                <p className="text-slate-600 dark:text-slate-300 mb-6">
-                    Thanks {clientDetails.name}, your request for <strong>{selectedService?.name}</strong> has been sent to {org.business_name}.
-                </p>
-                <button
-                    onClick={() => window.location.reload()}
-                    className="text-[#de5c1b] font-bold hover:underline"
-                >
-                    Book Another Service
-                </button>
+
+                {/* Account Creation CTA */}
+                <div className="bg-gradient-to-br from-[#de5c1b]/10 to-orange-50 dark:from-[#de5c1b]/20 dark:to-[#211611] p-6 rounded-2xl border border-[#de5c1b]/20 text-center animate-fade-in shadow-lg">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Track Your Request</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                        Create a free client account to view your upcoming bookings, message {org.business_name}, and manage your schedule.
+                    </p>
+                    <a
+                        href={`/signup?tier=Free&email=${encodeURIComponent(clientDetails.email)}`}
+                        className="inline-block w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all"
+                    >
+                        Create Free Account
+                    </a>
+                </div>
             </div>
         );
     }

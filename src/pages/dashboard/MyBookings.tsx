@@ -20,21 +20,57 @@ const MyBookings = () => {
             if (!user) return;
 
             try {
-                const { data: bookings, error } = await supabase
-                    .from('bookings')
-                    .select(`
-                        id,
-                        booking_datetime,
-                        status,
-                        notes,
-                        service:services(name, duration)
-                    `)
-                    .eq('employee_id', user.id)
-                    .order('booking_datetime', { ascending: activeTab === 'upcoming' });
+                let bookingsQuery;
+                if (user.tier === 'Free') {
+                    // Client View: Find client record(s) matching their email
+                    const { data: clientData, error: clientError } = await supabase
+                        .from('clients')
+                        .select('id')
+                        .eq('email', user.email);
 
-                if (error) throw error;
+                    if (clientError) throw clientError;
 
-                const mappedEvents: Event[] = bookings?.map((b: any) => {
+                    if (!clientData || clientData.length === 0) {
+                        setEvents([]);
+                        setLoading(false);
+                        return;
+                    }
+
+                    const clientIds = clientData.map(c => c.id);
+
+                    const { data, error } = await supabase
+                        .from('bookings')
+                        .select(`
+                            id,
+                            booking_datetime,
+                            status,
+                            notes,
+                            service:services(name, duration)
+                        `)
+                        .in('client_id', clientIds)
+                        .order('booking_datetime', { ascending: activeTab === 'upcoming' });
+
+                    if (error) throw error;
+                    bookingsQuery = data;
+                } else {
+                    // Provider View
+                    const { data, error } = await supabase
+                        .from('bookings')
+                        .select(`
+                            id,
+                            booking_datetime,
+                            status,
+                            notes,
+                            service:services(name, duration)
+                        `)
+                        .eq('employee_id', user.id)
+                        .order('booking_datetime', { ascending: activeTab === 'upcoming' });
+
+                    if (error) throw error;
+                    bookingsQuery = data;
+                }
+
+                const mappedEvents: Event[] = bookingsQuery?.map((b: any) => {
                     const startTime = new Date(b.booking_datetime);
                     // Duration logic matching Schedule.tsx
                     const noteDurationMatch = b.notes ? b.notes.match(/\[Duration:(\d+)\]/) : null;

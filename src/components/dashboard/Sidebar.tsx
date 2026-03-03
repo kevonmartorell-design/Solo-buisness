@@ -14,24 +14,27 @@ const Sidebar = () => {
     // ... navItems definition ...
     // ... navItems definition ...
     const allNavItems = [
-        { name: 'Dashboard', path: '/dashboard', icon: 'dashboard', tiers: ['Free', 'Solo', 'Business'] },
-        { name: 'Vault', path: '/vault', icon: 'lock', tiers: ['Business'] },
-        { name: 'Schedule', path: '/schedule', icon: 'calendar_today', tiers: ['Solo', 'Business'] },
-        { name: 'Employees', path: '/employees', icon: 'group', tiers: ['Solo', 'Business'] },
-        { name: 'Analytics', path: '/analytics', icon: 'bar_chart', tiers: ['Solo', 'Business'] },
-        { name: 'AEGIS AI', path: '/aegis-ai', icon: 'psychology', tiers: ['Solo', 'Business'] },
-        { name: 'Financials', path: '/financials', icon: 'payments', tiers: ['Solo', 'Business'] },
-        { name: 'Clients', path: '/clients', icon: 'handshake', tiers: ['Solo', 'Business'] },
-        { name: 'Services & Products', path: '/services', icon: 'inventory_2', tiers: ['Solo', 'Business'] },
+        { name: 'Dashboard', path: '/dashboard', icon: 'dashboard', tiers: ['Free', 'Solo', 'Business'], category: 'Core Ops' },
+        { name: 'Vault', path: '/vault', icon: 'lock', tiers: ['Business'], category: 'Core Ops' },
+        { name: 'Schedule', path: '/schedule', icon: 'calendar_today', tiers: ['Solo', 'Business'], category: 'Core Ops' },
+        { name: 'Employees', path: '/employees', icon: 'group', tiers: ['Solo', 'Business'], category: 'Core Ops' },
 
-        { name: 'Profile', path: '/profile', icon: 'account_circle', tiers: ['Free', 'Solo', 'Business'] },
-        { name: 'My Bookings', path: '/my-bookings', icon: 'event_available', tiers: ['Free', 'Solo', 'Business'] },
-        { name: 'Settings', path: '/settings', icon: 'settings', tiers: ['Free', 'Solo', 'Business'] },
+        { name: 'Analytics', path: '/analytics', icon: 'bar_chart', tiers: ['Solo', 'Business'], category: 'Growth' },
+        { name: 'AEGIS AI', path: '/aegis-ai', icon: 'psychology', tiers: ['Solo', 'Business'], category: 'Growth' },
+        { name: 'Financials', path: '/financials', icon: 'payments', tiers: ['Solo', 'Business'], category: 'Growth' },
+        { name: 'Clients', path: '/clients', icon: 'handshake', tiers: ['Solo', 'Business'], category: 'Growth' },
+        { name: 'Services & Products', path: '/services', icon: 'inventory_2', tiers: ['Solo', 'Business'], category: 'Growth' },
+
+        { name: 'Profile', path: '/profile', icon: 'account_circle', tiers: ['Free', 'Solo', 'Business'], category: 'Account' },
+        { name: 'My Bookings', path: '/my-bookings', icon: 'event_available', tiers: ['Free', 'Solo', 'Business'], category: 'Account' },
+        { name: 'Settings', path: '/settings', icon: 'settings', tiers: ['Free', 'Solo', 'Business'], category: 'Account' },
     ];
 
     // Filter items based on user's tier
     const userTier = user?.tier || 'Free';
     const navItems = allNavItems.filter(item => item.tiers.includes(userTier));
+
+    const categories = ['Core Ops', 'Growth', 'Account'];
 
     return (
         <aside className={`fixed left-0 top-0 h-full w-72 bg-[#1c1917] border-r border-white/5 flex flex-col shadow-2xl z-50 transition-transform duration-300 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -47,74 +50,35 @@ const Sidebar = () => {
             </div>
 
             <nav className="flex-1 overflow-y-auto p-4 space-y-6">
-                <div>
-                    <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Core Ops</p>
-                    <div className="space-y-1">
-                        {navItems.slice(0, 4).map((item) => (
-                            <NavLink
-                                key={item.path}
-                                to={item.path}
-                                className={({ isActive }) =>
-                                    clsx(
-                                        'flex items-center gap-3 px-4 py-3 rounded-xl transition-colors',
-                                        isActive
-                                            ? 'bg-primary text-white'
-                                            : 'text-slate-400 hover:bg-primary/10 hover:text-primary'
-                                    )
-                                }
-                            >
-                                <span className="material-symbols-outlined">{item.icon}</span>
-                                <span className="text-sm font-medium">{item.name}</span>
-                            </NavLink>
-                        ))}
-                    </div>
-                </div>
+                {categories.map((category) => {
+                    const categoryItems = navItems.filter((item) => item.category === category);
+                    if (categoryItems.length === 0) return null;
 
-                <div>
-                    <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Growth</p>
-                    <div className="space-y-1">
-                        {navItems.slice(4, 7).map((item) => (
-                            <NavLink
-                                key={item.path}
-                                to={item.path}
-                                className={({ isActive }) =>
-                                    clsx(
-                                        'flex items-center gap-3 px-4 py-3 rounded-xl transition-colors',
-                                        isActive
-                                            ? 'bg-primary text-white'
-                                            : 'text-slate-400 hover:bg-primary/10 hover:text-primary'
-                                    )
-                                }
-                            >
-                                <span className="material-symbols-outlined">{item.icon}</span>
-                                <span className="text-sm font-medium">{item.name}</span>
-                            </NavLink>
-                        ))}
-                    </div>
-                </div>
-
-                <div>
-                    <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Account</p>
-                    <div className="space-y-1">
-                        {navItems.slice(7).map((item) => (
-                            <NavLink
-                                key={item.path}
-                                to={item.path}
-                                className={({ isActive }) =>
-                                    clsx(
-                                        'flex items-center gap-3 px-4 py-3 rounded-xl transition-colors',
-                                        isActive
-                                            ? 'bg-primary text-white'
-                                            : 'text-slate-400 hover:bg-primary/10 hover:text-primary'
-                                    )
-                                }
-                            >
-                                <span className="material-symbols-outlined">{item.icon}</span>
-                                <span className="text-sm font-medium">{item.name}</span>
-                            </NavLink>
-                        ))}
-                    </div>
-                </div>
+                    return (
+                        <div key={category}>
+                            <p className="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">{category}</p>
+                            <div className="space-y-1">
+                                {categoryItems.map((item) => (
+                                    <NavLink
+                                        key={item.path}
+                                        to={item.path}
+                                        className={({ isActive }) =>
+                                            clsx(
+                                                'flex items-center gap-3 px-4 py-3 rounded-xl transition-colors',
+                                                isActive
+                                                    ? 'bg-primary text-white'
+                                                    : 'text-slate-400 hover:bg-primary/10 hover:text-primary'
+                                            )
+                                        }
+                                    >
+                                        <span className="material-symbols-outlined">{item.icon}</span>
+                                        <span className="text-sm font-medium">{item.name}</span>
+                                    </NavLink>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })}
             </nav>
         </aside>
     );
