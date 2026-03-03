@@ -64,6 +64,33 @@ export default function PublicBooking() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Mobile Form Validation (Prevents silent failures on iOS Safari etc.)
+        if (!formData.serviceId) {
+            toast.error("Please select a service.");
+            return;
+        }
+        if (!formData.date) {
+            toast.error("Please select a date.");
+            return;
+        }
+        if (!formData.time) {
+            toast.error("Please select a time.");
+            return;
+        }
+        if (!formData.name.trim()) {
+            toast.error("Please enter your full name.");
+            return;
+        }
+        if (!formData.email.trim()) {
+            toast.error("Please enter your email address.");
+            return;
+        }
+        if (!formData.phone.trim()) {
+            toast.error("Please enter your phone number.");
+            return;
+        }
+
         if (!employeeId || !org) return;
 
         setSubmitting(true);
@@ -119,7 +146,7 @@ export default function PublicBooking() {
     if (success) {
         return (
             <div className="min-h-screen bg-[#181311] flex flex-col items-center justify-center text-white p-6 font-display">
-                <div className="w-full max-w-md bg-[#251f1d] p-8 rounded-2xl border border-white/10 text-center shadow-xl">
+                <div className="w-full max-w-md bg-[#251f1d] p-8 rounded-2xl border border-white/10 text-center shadow-xl mb-6">
                     <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                         <CheckCircle2 className="w-8 h-8 text-emerald-500" />
                     </div>
@@ -133,6 +160,20 @@ export default function PublicBooking() {
                         className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-colors"
                     >
                         Book Another Service
+                    </button>
+                </div>
+
+                {/* Client Account Link */}
+                <div className="w-full max-w-md bg-gradient-to-br from-[#de5c1b]/20 to-[#de5c1b]/5 p-6 rounded-2xl border border-[#de5c1b]/30 text-center shadow-lg animate-[fade-in_0.3s_ease-out_0.2s_both]">
+                    <h3 className="text-xl font-bold mb-2">Track Your Request</h3>
+                    <p className="text-white/70 text-sm mb-6">
+                        Create a free client account to view your appointment status, manage bookings, and communicate with your provider.
+                    </p>
+                    <button
+                        onClick={() => navigate('/client/signup')}
+                        className="w-full py-3 bg-[#de5c1b] hover:bg-[#b84309] text-white rounded-xl font-bold shadow-lg shadow-[#de5c1b]/30 transition-all flex items-center justify-center gap-2"
+                    >
+                        Create Free Account <ArrowRight className="w-4 h-4" />
                     </button>
                 </div>
             </div>
@@ -161,7 +202,7 @@ export default function PublicBooking() {
                 <div className="bg-[#251f1d] rounded-2xl border border-white/10 p-6 sm:p-8 shadow-2xl">
                     <h2 className="text-xl font-bold mb-6 border-b border-white/10 pb-4">Request an Appointment</h2>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
 
                         {/* Service Selection */}
                         <div>

@@ -24,6 +24,10 @@ import UpgradeRequired from './pages/dashboard/UpgradeRequired';
 import PublicBooking from './pages/public/PublicBooking';
 import PublicReview from './pages/public/PublicReview';
 
+import ClientLogin from './pages/auth/ClientLogin';
+import ClientSignup from './pages/auth/ClientSignup';
+import ClientDashboard from './pages/client/ClientDashboard';
+
 import { SidebarProvider } from './contexts/SidebarContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { BrandingProvider } from './contexts/BrandingContext';
@@ -51,11 +55,21 @@ function App() {
                     <Route path="/signup" element={<Signup />} />
                     <Route path="/onboarding" element={<Onboarding />} />
 
+                    <Route path="/client/login" element={<ClientLogin />} />
+                    <Route path="/client/signup" element={<ClientSignup />} />
+
                     {/* Public Routes (No Auth Required) */}
                     <Route element={<PublicLayout />}>
                       <Route path="/book/:employeeId" element={<PublicBooking />} />
                       <Route path="/review/:orgId/:bookingId" element={<PublicReview />} />
                     </Route>
+
+                    {/* Client Only Routes */}
+                    <Route path="/client/dashboard" element={
+                      <ProtectedRoute allowedTiers={['Client', 'Free', 'Solo', 'Business']}>
+                        <ClientDashboard />
+                      </ProtectedRoute>
+                    } />
 
                     <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                       <Route path="/dashboard" element={<DashboardHome />} />
