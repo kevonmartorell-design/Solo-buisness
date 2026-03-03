@@ -52,7 +52,7 @@ const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({ isOpen, onClose, on
         }
     };
 
-    const targetPlan = plans[targetTier];
+    const targetPlan = plans[targetTier as keyof typeof plans] || plans.Free;
     const isUpgrade = (currentTier === 'Free') || (currentTier === 'Solo' && targetTier === 'Business');
 
     return (
@@ -79,7 +79,7 @@ const TierUpgradeModal: React.FC<TierUpgradeModalProps> = ({ isOpen, onClose, on
                 <div className="p-6">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">What's Included</h3>
                     <div className="space-y-3 mb-8">
-                        {targetPlan.features.map((feature, idx) => (
+                        {targetPlan.features.map((feature: string, idx: number) => (
                             <div key={idx} className="flex items-start gap-3">
                                 <div className={`mt-0.5 p-0.5 rounded-full ${targetPlan.bgColor} ${targetPlan.color}`}>
                                     <Check className="w-3.5 h-3.5" />
