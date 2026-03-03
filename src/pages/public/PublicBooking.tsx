@@ -213,42 +213,6 @@ const PublicBooking = () => {
         return <div className="text-center py-20 text-slate-500">Organization not found.</div>;
     }
 
-    if (success) {
-        return (
-            <div className="max-w-md mx-auto p-4 sm:p-8">
-                <div className="bg-white dark:bg-[#211611] p-8 rounded-2xl shadow-xl text-center animate-fade-in border border-[#de5c1b]/10 mb-6">
-                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Check className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Booking Requested!</h2>
-                    <p className="text-slate-600 dark:text-slate-300 mb-6">
-                        Thanks {clientDetails.name}, your request for <strong>{selectedService?.name}</strong> has been sent to {org.business_name}.
-                    </p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="text-[#de5c1b] font-bold hover:underline"
-                    >
-                        Book Another Service
-                    </button>
-                </div>
-
-                {/* Account Creation CTA */}
-                <div className="bg-gradient-to-br from-[#de5c1b]/10 to-orange-50 dark:from-[#de5c1b]/20 dark:to-[#211611] p-6 rounded-2xl border border-[#de5c1b]/20 text-center animate-fade-in shadow-lg">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Track Your Request</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
-                        Create a free client account to view your upcoming bookings, message {org.business_name}, and manage your schedule.
-                    </p>
-                    <a
-                        href={`/signup?tier=Free&email=${encodeURIComponent(clientDetails.email)}`}
-                        className="inline-block w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all"
-                    >
-                        Create Free Account
-                    </a>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="max-w-3xl mx-auto">
             {/* Header / Org Info */}
@@ -503,6 +467,51 @@ const PublicBooking = () => {
                                 {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Booking'}
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Modal Overlay */}
+            {success && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="w-full max-w-md bg-white dark:bg-[#211611] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-slate-200 dark:border-white/10 relative">
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors z-10 bg-slate-100 dark:bg-white/10 p-2 rounded-full"
+                            aria-label="Close"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+
+                        <div className="p-8 pb-6 text-center border-b border-slate-100 dark:border-white/5 relative bg-white dark:bg-[#211611]">
+                            <div className="w-20 h-20 bg-green-50 dark:bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                                <Check className="w-10 h-10" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">Booking Requested!</h2>
+                            <p className="text-slate-600 dark:text-slate-300 mb-6 text-sm leading-relaxed">
+                                Thanks {clientDetails.name}, your request for <strong>{selectedService?.name}</strong> has been sent to {org?.business_name}.
+                            </p>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="text-[#de5c1b] font-bold hover:underline text-sm"
+                            >
+                                Book Another Service
+                            </button>
+                        </div>
+
+                        {/* Account Creation CTA */}
+                        <div className="bg-gradient-to-br from-[#de5c1b]/10 to-[#de5c1b]/5 dark:from-[#de5c1b]/20 dark:to-[#1a110d] p-8 text-center animate-fade-in block">
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">Track Your Request</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-300 mb-6 leading-relaxed">
+                                Create a free client account to view your upcoming bookings, message {org?.business_name}, and manage your schedule.
+                            </p>
+                            <a
+                                href={`/signup?tier=Free&email=${encodeURIComponent(clientDetails.email)}`}
+                                className="inline-block w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-[#de5c1b]/25 transition-all active:scale-[0.98]"
+                            >
+                                Create Free Account
+                            </a>
+                        </div>
                     </div>
                 </div>
             )}
