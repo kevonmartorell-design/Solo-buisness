@@ -1,0 +1,2 @@
+﻿src/App.tsx(69,54): error TS2322: Type '"Client"' is not assignable to type 'Tier'.
+src/pages/dashboard/MyBookings.tsx(39,61): error TS2339: Property 'id' does not exist on type 'never'.

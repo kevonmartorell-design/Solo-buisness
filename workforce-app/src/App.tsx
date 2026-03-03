@@ -66,7 +66,7 @@ function App() {
 
                     {/* Client Only Routes */}
                     <Route path="/client/dashboard" element={
-                      <ProtectedRoute allowedTiers={['Client', 'Free', 'Solo', 'Business']}>
+                      <ProtectedRoute allowedTiers={['Free', 'Solo', 'Business']}>
                         <ClientDashboard />
                       </ProtectedRoute>
                     } />

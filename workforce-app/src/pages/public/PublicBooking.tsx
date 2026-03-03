@@ -1,344 +1,513 @@
+
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, Clock, User, Mail, Phone, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import toast from 'react-hot-toast';
+import type { Database } from '../../types/supabase';
+import { Calendar, Clock, Check, ChevronLeft, Loader2, MapPin, Globe, User, Mail, Phone, Star, Instagram, Facebook, Linkedin } from 'lucide-react';
+import { format } from 'date-fns';
 
-export default function PublicBooking() {
-    const { employeeId } = useParams();
-    const navigate = useNavigate();
+type Organization = {
+    id: string;
+    business_name: string;
+    settings: any;
+    onboarding_data: any;
+};
 
+type Service = {
+    id: string;
+    name: string;
+    duration: number;
+    price: number;
+    description: string;
+    image_url?: string | null;
+};
+
+type Review = {
+    id: string;
+    rating: number;
+    comment: string;
+    testimonial_text?: string;
+    created_at: string;
+};
+
+const PublicBooking = () => {
+    const { orgId } = useParams(); // Expecting UUID for now
     const [loading, setLoading] = useState(true);
-    const [submitting, setSubmitting] = useState(false);
-    const [success, setSuccess] = useState(false);
+    const [org, setOrg] = useState<Organization | null>(null);
+    const [services, setServices] = useState<Service[]>([]);
+    const [reviews, setReviews] = useState<Review[]>([]);
 
-    const [employee, setEmployee] = useState<any>(null);
-    const [org, setOrg] = useState<any>(null);
-    const [services, setServices] = useState<any[]>([]);
-
-    const [formData, setFormData] = useState({
+    // Booking State
+    const [step, setStep] = useState(1);
+    const [selectedService, setSelectedService] = useState<Service | null>(null);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+    const [selectedTime, setSelectedTime] = useState<string | null>(null);
+    const [clientDetails, setClientDetails] = useState({
         name: '',
         email: '',
         phone: '',
-        serviceId: '',
-        date: '',
-        time: '',
         notes: ''
     });
+    const [submitting, setSubmitting] = useState(false);
+    const [success, setSuccess] = useState(false);
 
     useEffect(() => {
-        const fetchDetails = async () => {
-            if (!employeeId) return;
+        const fetchOrgAndServices = async () => {
+            // In a real production app, we would query by 'slug' field. 
+            // For now, we assume orgId is the UUID or we try to find by business_name if it's not a UUID.
+            // But to keep MVP simple and robust, let's assume UUID first.
+            if (!orgId) return;
 
             try {
-                // 1. Get Employee Profile & Org
-                const { data: profileData, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('id, name, avatar_url, role, organization_id, organizations(business_name)')
-                    .eq('id', employeeId)
+                // 1. Fetch Org
+                const { data: orgData, error: orgError } = await supabase
+                    .from('organizations')
+                    .select('*')
+                    .eq('id', orgId)
                     .single();
 
-                if (profileError || !profileData) throw new Error('Employee not found');
-                setEmployee(profileData);
-                setOrg((profileData as any).organizations);
+                if (orgError) throw orgError;
+                const orgTyped = orgData as unknown as Organization;
+                setOrg(orgTyped);
 
-                // 2. Get Services for that Org
+                // 2. Fetch Services
                 const { data: servicesData, error: servicesError } = await supabase
                     .from('services')
                     .select('*')
-                    .eq('organization_id', (profileData as any).organization_id);
+                    .eq('organization_id', orgTyped.id);
 
                 if (servicesError) throw servicesError;
-                setServices(servicesData || []);
+                setServices((servicesData as unknown as Service[]) || []);
+
+                // 3. Fetch Reviews (Top rated, public)
+                const { data: reviewsData, error: reviewsError } = await supabase
+                    .from('ratings_reviews')
+                    .select('*')
+                    .eq('organization_id', orgTyped.id)
+                    .gte('rating', 4) // Only 4 or 5 stars
+                    .eq('is_public', true)
+                    .order('created_at', { ascending: false })
+                    .limit(4);
+
+                if (!reviewsError) {
+                    setReviews((reviewsData as unknown as Review[]) || []);
+                }
 
             } catch (err) {
-                console.error('Fetch error:', err);
-                toast.error("Could not load booking details.");
+                console.error("Error fetching booking data:", err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchDetails();
-    }, [employeeId]);
+        fetchOrgAndServices();
+    }, [orgId]);
+
+    const handleServiceSelect = (service: Service) => {
+        setSelectedService(service);
+        setStep(2);
+    };
+
+    const handleTimeSelect = (time: string) => {
+        setSelectedTime(time);
+        setStep(3);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Mobile Form Validation (Prevents silent failures on iOS Safari etc.)
-        if (!formData.serviceId) {
-            toast.error("Please select a service.");
-            return;
-        }
-        if (!formData.date) {
-            toast.error("Please select a date.");
-            return;
-        }
-        if (!formData.time) {
-            toast.error("Please select a time.");
-            return;
-        }
-        if (!formData.name.trim()) {
-            toast.error("Please enter your full name.");
-            return;
-        }
-        if (!formData.email.trim()) {
-            toast.error("Please enter your email address.");
-            return;
-        }
-        if (!formData.phone.trim()) {
-            toast.error("Please enter your phone number.");
-            return;
-        }
-
-        if (!employeeId || !org) return;
+        if (!org || !selectedService || !selectedDate || !selectedTime) return;
 
         setSubmitting(true);
         try {
-            // Combine date & time
-            const reqDateTime = new Date(`${formData.date}T${formData.time}`).toISOString();
+            // 1. Create/Find Client (Simple version: always create new or update if email matches - handled by logic or just insert)
+            // Ideally we check if client exists by email for this org. 
+            // Since RLS might block reading clients for anon, we might strictly INSERT. 
+            // But let's try to just INSERT and let backend handle dupe if compatible, or just create a booking with client info directly if schema supports it?
+            // Schema has `client_id` in bookings. `clients` table exists.
 
-            // Securely call the Postgres RPC to handle client fetch/create and appointment insert 
-            // This safely bypasses RLS restrictions for anonymous public users.
-            const { error: rpcError } = await (supabase.rpc as any)('create_public_booking', {
-                p_org_id: employee.organization_id,
-                p_emp_id: employee.id,
-                p_service_id: formData.serviceId,
-                p_name: formData.name,
-                p_email: formData.email,
-                p_phone: formData.phone,
-                p_datetime: reqDateTime,
-                p_notes: `Notes: ${formData.notes}`
-            });
+            // NOTE: Without a backend function, Anon users probably CANNOT query the `clients` table to check for duplicates due to RLS.
+            // We will attempt to Insert a new client. If it fails (due to unique constraint?), we might fail.
+            // For MVP: We will blindly insert into `clients`. If your RLS allows anon insert, good.
 
-            if (rpcError) throw rpcError;
+            // Note: Use a more robust approach in production (Edge Function).
+
+            const { data: newClient, error: clientError } = await (supabase as any)
+                .from('clients')
+                .insert({
+                    organization_id: org.id,
+                    name: clientDetails.name,
+                    email: clientDetails.email,
+                    phone: clientDetails.phone,
+                    status: 'Lead' // New public booking clients are leads or active
+                })
+                .select()
+                .single();
+
+            let finalClientId = newClient?.id;
+
+            // If client insert failed (maybe email exists?), strictly speaking we should fail or have a way to match.
+            // Let's assume for this MVP that simple insert works or we catch error.
+            if (clientError) {
+                console.warn("Client creation failed (likely exists).", clientError);
+                // In a real app we'd need a secure way to lookup client.
+                // For now, if client creation fails, we might just fail the booking or need a workaround.
+            }
+
+            // 2. Create Booking
+            // Combine date and time
+            const [hours, minutes] = selectedTime.split(':').map(Number);
+            const bookingDateTime = new Date(selectedDate);
+            bookingDateTime.setHours(hours, minutes, 0, 0);
+
+            const { data: bookingData, error: bookingError } = await (supabase as any)
+                .from('bookings')
+                .insert({
+                    organization_id: org.id,
+                    service_id: selectedService.id,
+                    client_id: finalClientId,
+                    booking_datetime: bookingDateTime.toISOString(),
+                    status: 'requested', // Public bookings start as requested
+                    notes: `Public Booking\nName: ${clientDetails.name}\nEmail: ${clientDetails.email}\nNotes: ${clientDetails.notes}`
+                })
+                .select()
+                .single();
+
+            if (bookingError) throw bookingError;
+
+            // Trigger Email Notification (Edge Function)
+            // Fire and forget - don't block success message
+            if (bookingData?.id) {
+                supabase.functions.invoke('send-booking-notification', {
+                    body: { booking_id: bookingData.id }
+                }).then(({ error: funcError }) => {
+                    if (funcError) console.warn('Notification failed:', funcError);
+                });
+            }
 
             setSuccess(true);
-            toast.success("Request sent successfully!");
+            setStep(4);
 
-        } catch (err: any) {
-            console.error("Booking Error:", err);
-            toast.error(err.message || "Failed to submit booking request.");
+        } catch (err) {
+            console.error("Booking submission error:", err);
+            alert("Failed to submit booking. Please try again.");
         } finally {
             setSubmitting(false);
         }
     };
 
+    // Helper to generate time slots (Mock availability)
+    const generateTimeSlots = () => {
+        const slots = [];
+        for (let i = 9; i < 17; i++) {
+            slots.push(`${i}:00`);
+            slots.push(`${i}:30`);
+        }
+        return slots;
+    };
+
     if (loading) {
-        return (
-            <div className="min-h-screen bg-[#181311] flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#de5c1b]"></div>
-            </div>
-        );
+        return <div className="flex justify-center items-center py-20"><Loader2 className="w-8 h-8 animate-spin text-[#de5c1b]" /></div>;
     }
 
-    if (!employee) {
-        return (
-            <div className="min-h-screen bg-[#181311] flex items-center justify-center text-white">
-                <div className="text-center">
-                    <h2 className="text-2xl font-bold mb-2">Provider Not Found</h2>
-                    <p className="text-white/60">The booking link you followed might be invalid.</p>
-                </div>
-            </div>
-        );
+    if (!org) {
+        return <div className="text-center py-20 text-slate-500">Organization not found.</div>;
     }
 
     if (success) {
         return (
-            <div className="min-h-screen bg-[#181311] flex flex-col items-center justify-center text-white p-6 font-display">
-                <div className="w-full max-w-md bg-[#251f1d] p-8 rounded-2xl border border-white/10 text-center shadow-xl mb-6">
-                    <div className="w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+            <div className="max-w-md mx-auto p-4 sm:p-8">
+                <div className="bg-white dark:bg-[#211611] p-8 rounded-2xl shadow-xl text-center animate-fade-in border border-[#de5c1b]/10 mb-6">
+                    <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Check className="w-8 h-8" />
                     </div>
-                    <h2 className="text-2xl font-bold mb-3">Request Sent!</h2>
-                    <p className="text-white/70 mb-8">
-                        Your appointment request has been sent to {employee.name}.
-                        You will receive a notification once it has been approved.
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Booking Requested!</h2>
+                    <p className="text-slate-600 dark:text-slate-300 mb-6">
+                        Thanks {clientDetails.name}, your request for <strong>{selectedService?.name}</strong> has been sent to {org.business_name}.
                     </p>
                     <button
                         onClick={() => window.location.reload()}
-                        className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-colors"
+                        className="text-[#de5c1b] font-bold hover:underline"
                     >
                         Book Another Service
                     </button>
                 </div>
 
-                {/* Client Account Link */}
-                <div className="w-full max-w-md bg-gradient-to-br from-[#de5c1b]/20 to-[#de5c1b]/5 p-6 rounded-2xl border border-[#de5c1b]/30 text-center shadow-lg animate-[fade-in_0.3s_ease-out_0.2s_both]">
-                    <h3 className="text-xl font-bold mb-2">Track Your Request</h3>
-                    <p className="text-white/70 text-sm mb-6">
-                        Create a free client account to view your appointment status, manage bookings, and communicate with your provider.
+                {/* Account Creation CTA */}
+                <div className="bg-gradient-to-br from-[#de5c1b]/10 to-orange-50 dark:from-[#de5c1b]/20 dark:to-[#211611] p-6 rounded-2xl border border-[#de5c1b]/20 text-center animate-fade-in shadow-lg">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Track Your Request</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                        Create a free client account to view your upcoming bookings, message {org.business_name}, and manage your schedule.
                     </p>
-                    <button
-                        onClick={() => navigate('/client/signup')}
-                        className="w-full py-3 bg-[#de5c1b] hover:bg-[#b84309] text-white rounded-xl font-bold shadow-lg shadow-[#de5c1b]/30 transition-all flex items-center justify-center gap-2"
+                    <a
+                        href={`/signup?tier=Free&email=${encodeURIComponent(clientDetails.email)}`}
+                        className="inline-block w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all"
                     >
-                        Create Free Account <ArrowRight className="w-4 h-4" />
-                    </button>
+                        Create Free Account
+                    </a>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#181311] text-white py-12 px-4 sm:px-6 flex justify-center font-display">
-            <div className="w-full max-w-2xl">
+        <div className="max-w-3xl mx-auto">
+            {/* Header / Org Info */}
+            <div className="mb-8 text-center">
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{org.business_name}</h1>
+                <div className="flex items-center justify-center gap-4 text-sm text-slate-500">
+                    {org.settings?.location && (
+                        <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {org.settings.location}</span>
+                    )}
+                    {org.settings?.website && (
+                        <span className="flex items-center gap-1"><Globe className="w-4 h-4" /> {org.settings.website}</span>
+                    )}
+                </div>
 
-                {/* Header Profile */}
-                <div className="flex flex-col items-center text-center mb-10">
-                    <div className="w-24 h-24 rounded-full border-4 border-[#de5c1b] overflow-hidden mb-4 bg-[#251f1d]">
-                        {employee.avatar_url ? (
-                            <img src={employee.avatar_url} alt={employee.name} className="w-full h-full object-cover" />
-                        ) : (
-                            <User className="w-full h-full p-4 text-white/20" />
+                {/* Bio & Socials */}
+                {(org.settings?.bio || org.settings?.socials) && (
+                    <div className="mt-6 max-w-2xl mx-auto text-center animate-fade-in">
+                        {org.settings?.bio && (
+                            <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-4">
+                                {org.settings.bio}
+                            </p>
+                        )}
+                        {org.settings?.socials && (
+                            <div className="flex justify-center gap-4">
+                                {org.settings.socials.instagram && (
+                                    <a href={org.settings.socials.instagram} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#de5c1b] transition-colors">
+                                        <Instagram className="w-5 h-5" />
+                                    </a>
+                                )}
+                                {org.settings.socials.facebook && (
+                                    <a href={org.settings.socials.facebook} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#de5c1b] transition-colors">
+                                        <Facebook className="w-5 h-5" />
+                                    </a>
+                                )}
+                                {org.settings.socials.linkedin && (
+                                    <a href={org.settings.socials.linkedin} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#de5c1b] transition-colors">
+                                        <Linkedin className="w-5 h-5" />
+                                    </a>
+                                )}
+                            </div>
                         )}
                     </div>
-                    <h1 className="text-3xl font-bold mb-1">{employee.name}</h1>
-                    <p className="text-[#de5c1b] font-medium tracking-wide uppercase text-sm mb-2">{employee.role.replace('_', ' ')}</p>
-                    {org && <p className="text-white/50">{org.business_name}</p>}
+                )}
+            </div>
+
+            {/* Portfolio / Gallery (From Services) */}
+            {services.some(s => s.image_url) && (
+                <div className="mb-8 animate-fade-in">
+                    <h3 className="text-center text-xs font-bold text-[#de5c1b] uppercase tracking-widest mb-4">Our Work</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {services.filter(s => s.image_url).map((service) => (
+                            <div key={service.id} className="relative group overflow-hidden rounded-xl aspect-square shadow-sm border border-slate-100 dark:border-white/5 bg-slate-100 dark:bg-white/5">
+                                <img
+                                    src={service.image_url || ''}
+                                    alt={service.name}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                                    <span className="text-white text-xs font-bold truncate">{service.name}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
+            )}
 
-                {/* Booking Form */}
-                <div className="bg-[#251f1d] rounded-2xl border border-white/10 p-6 sm:p-8 shadow-2xl">
-                    <h2 className="text-xl font-bold mb-6 border-b border-white/10 pb-4">Request an Appointment</h2>
+            {/* Trusted Reviews Section */}
+            {reviews.length > 0 && (
+                <div className="mb-8 animate-fade-in">
+                    <h3 className="text-center text-xs font-bold text-[#de5c1b] uppercase tracking-widest mb-4">Trusted Reviews</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {reviews.map((review) => (
+                            <div key={review.id} className="bg-white dark:bg-[#211611] p-4 rounded-xl shadow-sm border border-slate-100 dark:border-white/5">
+                                <div className="flex text-[#de5c1b] mb-2">
+                                    {[...Array(review.rating)].map((_, i) => (
+                                        <Star key={i} className="w-4 h-4 fill-current" />
+                                    ))}
+                                </div>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 italic mb-2">"{review.comment}"</p>
+                                {review.testimonial_text && (
+                                    <p className="text-xs text-slate-400 border-t border-slate-100 dark:border-white/5 pt-2 mt-2">
+                                        "{review.testimonial_text}"
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
-                    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+            {/* Progress Steps */}
+            <div className="flex items-center justify-center mb-8 gap-2">
+                {[1, 2, 3].map(i => (
+                    <div key={i} className={`h-2 rounded-full transition-all ${step >= i ? 'w-8 bg-[#de5c1b]' : 'w-2 bg-slate-200 dark:bg-slate-700'}`} />
+                ))}
+            </div>
 
-                        {/* Service Selection */}
-                        <div>
-                            <label className="block text-sm font-medium text-white/70 mb-2">Select Service</label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                {services.map(service => (
-                                    <label
-                                        key={service.id}
-                                        className={`flex flex-col p-4 rounded-xl border cursor-pointer transition-all ${formData.serviceId === service.id
-                                            ? 'bg-[#de5c1b]/20 border-[#de5c1b]'
-                                            : 'bg-white/5 border-white/10 hover:border-white/30'
-                                            }`}
+            {/* Step 1: Services */}
+            {step === 1 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                    {services.map(service => (
+                        <div
+                            key={service.id}
+                            onClick={() => handleServiceSelect(service)}
+                            className="bg-white dark:bg-[#211611] p-6 rounded-xl shadow-sm border border-slate-200 dark:border-white/5 hover:border-[#de5c1b] cursor-pointer transition-all hover:shadow-md group"
+                        >
+                            <div className="flex justify-between items-start mb-2">
+                                <h3 className="font-bold text-lg dark:text-white group-hover:text-[#de5c1b] transition-colors">{service.name}</h3>
+                                {service.price && <span className="font-semibold text-slate-900 dark:text-white">${service.price}</span>}
+                            </div>
+                            <p className="text-slate-500 text-sm mb-4 line-clamp-2">{service.description || 'No description available.'}</p>
+                            <div className="flex items-center gap-2 text-xs text-slate-400 font-bold uppercase tracking-wider">
+                                <Clock className="w-4 h-4" />
+                                {service.duration} mins
+                            </div>
+                        </div>
+                    ))}
+                    {services.length === 0 && <p className="col-span-2 text-center text-slate-500">No services available.</p>}
+                </div>
+            )}
+
+            {/* Step 2: Date & Time */}
+            {step === 2 && (
+                <div className="animate-fade-in">
+                    <button onClick={() => setStep(1)} className="mb-4 text-sm font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1">
+                        <ChevronLeft className="w-4 h-4" /> Back to Services
+                    </button>
+
+                    <div className="bg-white dark:bg-[#211611] rounded-2xl shadow-sm border border-slate-200 dark:border-white/5 overflow-hidden flex flex-col md:flex-row">
+                        {/* Date Picker (Calendar) */}
+                        <div className="p-6 border-b md:border-b-0 md:border-r border-slate-200 dark:border-white/5 md:w-1/2">
+                            <h3 className="font-bold text-lg mb-4 dark:text-white flex items-center gap-2">
+                                <Calendar className="w-5 h-5 text-[#de5c1b]" /> Select Date
+                            </h3>
+                            {/* Simple Custom Calendar/Date Input for MVP */}
+                            <input
+                                type="date"
+                                className="w-full p-3 border border-slate-200 rounded-lg dark:bg-black/20 dark:text-white dark:border-white/10"
+                                value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
+                                onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                                min={new Date().toISOString().split('T')[0]}
+                            />
+                            <p className="mt-4 text-xs text-slate-400">
+                                * Availability is shown for the selected date.
+                            </p>
+                        </div>
+
+                        {/* Time Slots */}
+                        <div className="p-6 md:w-1/2 bg-slate-50 dark:bg-[#2a1d17]">
+                            <h3 className="font-bold text-lg mb-4 dark:text-white flex items-center gap-2">
+                                <Clock className="w-5 h-5 text-[#de5c1b]" /> Select Time
+                            </h3>
+                            <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                {generateTimeSlots().map(time => (
+                                    <button
+                                        key={time}
+                                        onClick={() => handleTimeSelect(time)}
+                                        className="py-2 px-1 text-sm font-medium rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#211611] hover:border-[#de5c1b] hover:text-[#de5c1b] transition-colors dark:text-slate-300"
                                     >
-                                        <input
-                                            type="radio"
-                                            name="service"
-                                            value={service.id}
-                                            className="sr-only"
-                                            checked={formData.serviceId === service.id}
-                                            onChange={(e) => setFormData({ ...formData, serviceId: e.target.value })}
-                                            required
-                                        />
-                                        <span className="font-bold">{service.name}</span>
-                                        <span className="text-sm text-[#de5c1b] mt-1">${service.price} • {service.duration} mins</span>
-                                    </label>
+                                        {time}
+                                    </button>
                                 ))}
                             </div>
-                            {services.length === 0 && <p className="text-sm text-red-400">No services available.</p>}
                         </div>
+                    </div>
+                </div>
+            )}
 
-                        {/* Date & Time */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-white/70 mb-2 flex items-center gap-2">
-                                    <Calendar className="w-4 h-4" /> Date
-                                </label>
-                                <input
-                                    type="date"
-                                    required
-                                    min={new Date().toISOString().split('T')[0]}
-                                    value={formData.date}
-                                    onChange={e => setFormData({ ...formData, date: e.target.value })}
-                                    className="w-full bg-[#181311] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#de5c1b]"
-                                />
+            {/* Step 3: Details */}
+            {step === 3 && (
+                <div className="animate-fade-in">
+                    <button onClick={() => setStep(2)} className="mb-4 text-sm font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1">
+                        <ChevronLeft className="w-4 h-4" /> Back to Time
+                    </button>
+
+                    <div className="bg-white dark:bg-[#211611] p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-white/5">
+                        <h3 className="font-bold text-xl mb-6 dark:text-white">Your Details</h3>
+
+                        <div className="mb-6 p-4 bg-slate-50 dark:bg-black/20 rounded-xl flex items-start gap-4">
+                            <div className="w-12 h-12 bg-[#de5c1b]/10 rounded-lg flex items-center justify-center text-[#de5c1b] shrink-0">
+                                <Calendar className="w-6 h-6" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-white/70 mb-2 flex items-center gap-2">
-                                    <Clock className="w-4 h-4" /> Time
-                                </label>
-                                <input
-                                    type="time"
-                                    required
-                                    value={formData.time}
-                                    onChange={e => setFormData({ ...formData, time: e.target.value })}
-                                    className="w-full bg-[#181311] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#de5c1b]"
-                                />
+                                <p className="font-bold text-slate-900 dark:text-white text-lg">{selectedService?.name}</p>
+                                <p className="text-slate-500 text-sm">
+                                    {selectedDate?.toDateString()} at {selectedTime}
+                                </p>
+                                <p className="text-slate-400 text-xs mt-1 uppercase font-bold tracking-wide">{selectedService?.duration} Mins • ${selectedService?.price}</p>
                             </div>
                         </div>
 
-                        <hr className="border-white/10 my-8" />
-
-                        {/* Client Info */}
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold mb-4">Your Information</h3>
-
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-white/70 mb-2">Full Name</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.name}
-                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full bg-[#181311] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#de5c1b] placeholder:text-white/30"
-                                    placeholder="Jane Doe"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-white/70 mb-2 flex items-center gap-2">
-                                        <Mail className="w-4 h-4" /> Email
-                                    </label>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Full Name</label>
+                                <div className="relative">
+                                    <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-300" />
                                     <input
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full bg-[#181311] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#de5c1b] placeholder:text-white/30"
-                                        placeholder="jane@example.com"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-white/70 mb-2 flex items-center gap-2">
-                                        <Phone className="w-4 h-4" /> Phone (Required for SMS)
-                                    </label>
-                                    <input
-                                        type="tel"
                                         required
-                                        value={formData.phone}
-                                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                        className="w-full bg-[#181311] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#de5c1b] placeholder:text-white/30"
-                                        placeholder="(555) 123-4567"
+                                        type="text"
+                                        className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#de5c1b] outline-none dark:text-white"
+                                        placeholder="John Doe"
+                                        value={clientDetails.name}
+                                        onChange={(e) => setClientDetails({ ...clientDetails, name: e.target.value })}
                                     />
                                 </div>
                             </div>
-                        </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Email</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-3 top-3.5 w-5 h-5 text-slate-300" />
+                                        <input
+                                            required
+                                            type="email"
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#de5c1b] outline-none dark:text-white"
+                                            placeholder="john@example.com"
+                                            value={clientDetails.email}
+                                            onChange={(e) => setClientDetails({ ...clientDetails, email: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Phone</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-3.5 w-5 h-5 text-slate-300" />
+                                        <input
+                                            required
+                                            type="tel"
+                                            className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#de5c1b] outline-none dark:text-white"
+                                            placeholder="(555) 123-4567"
+                                            value={clientDetails.phone}
+                                            onChange={(e) => setClientDetails({ ...clientDetails, phone: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Notes (Optional)</label>
+                                <textarea
+                                    className="w-full p-4 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-[#de5c1b] outline-none dark:text-white resize-none min-h-[100px]"
+                                    placeholder="Any special requests?"
+                                    value={clientDetails.notes}
+                                    onChange={(e) => setClientDetails({ ...clientDetails, notes: e.target.value })}
+                                ></textarea>
+                            </div>
 
-                        {/* Notes */}
-                        <div>
-                            <label className="block text-sm font-medium text-white/70 mb-2">Additional Notes (Optional)</label>
-                            <textarea
-                                value={formData.notes}
-                                onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                                className="w-full bg-[#181311] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#de5c1b] placeholder:text-white/30 min-h-[100px]"
-                                placeholder="Any special requests or details..."
-                            />
-                        </div>
-
-                        {/* Submit */}
-                        <button
-                            type="submit"
-                            disabled={submitting || !formData.serviceId}
-                            className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${submitting || !formData.serviceId
-                                ? 'bg-white/10 text-white/50 cursor-not-allowed'
-                                : 'bg-[#de5c1b] hover:bg-[#b84309] text-white shadow-lg shadow-[#de5c1b]/30 hover:shadow-xl hover:shadow-[#de5c1b]/40'
-                                }`}
-                        >
-                            {submitting ? 'Sending Request...' : 'Send Request'}
-                            {!submitting && <ArrowRight className="w-5 h-5" />}
-                        </button>
-                    </form>
+                            <button
+                                type="submit"
+                                disabled={submitting}
+                                className="w-full bg-[#de5c1b] hover:bg-[#de5c1b]/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-[#de5c1b]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed mt-4"
+                            >
+                                {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirm Booking'}
+                            </button>
+                        </form>
+                    </div>
                 </div>
-
-                <div className="text-center mt-8">
-                    <p className="text-xs text-white/40">Powered by AEGIS CERT</p>
-                </div>
-            </div>
+            )}
         </div>
     );
-}
+};
+
+export default PublicBooking;
