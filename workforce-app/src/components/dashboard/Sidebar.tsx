@@ -20,7 +20,7 @@ const Sidebar = () => {
         { name: 'Employees', path: '/employees', icon: 'group', tiers: ['Solo', 'Business'], category: 'Core Ops' },
 
         { name: 'Analytics', path: '/analytics', icon: 'bar_chart', tiers: ['Solo', 'Business'], category: 'Growth' },
-        { name: 'AEGIS AI', path: '/aegis-ai', icon: 'psychology', tiers: ['Solo', 'Business'], category: 'Growth' },
+        // { name: 'AEGIS AI', path: '/aegis-ai', icon: 'psychology', tiers: ['Solo', 'Business'], category: 'Growth' },
         { name: 'Financials', path: '/financials', icon: 'payments', tiers: ['Solo', 'Business'], category: 'Growth' },
         { name: 'Clients', path: '/clients', icon: 'handshake', tiers: ['Solo', 'Business'], category: 'Growth' },
         { name: 'Services & Products', path: '/services', icon: 'inventory_2', tiers: ['Solo', 'Business'], category: 'Growth' },
