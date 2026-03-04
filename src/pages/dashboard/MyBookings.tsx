@@ -11,7 +11,7 @@ const MyBookings = () => {
     const { user } = useAuth();
     const { toggleSidebar } = useSidebar();
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'schedule'>('upcoming');
+    const [activeTab, setActiveTab] = useState<'upcoming' | 'pending' | 'past' | 'schedule'>('upcoming');
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [events, setEvents] = useState<Event[]>([]);
 
@@ -36,7 +36,7 @@ const MyBookings = () => {
                         return;
                     }
 
-                    const clientIds = clientData.map(c => c.id);
+                    const clientIds = clientData.map((c: any) => c.id);
 
                     const { data, error } = await supabase
                         .from('bookings')
@@ -48,7 +48,7 @@ const MyBookings = () => {
                             service:services(name, duration)
                         `)
                         .in('client_id', clientIds)
-                        .order('booking_datetime', { ascending: activeTab === 'upcoming' });
+                        .order('booking_datetime', { ascending: activeTab === 'upcoming' || activeTab === 'pending' });
 
                     if (error) throw error;
                     bookingsQuery = data;
@@ -64,7 +64,7 @@ const MyBookings = () => {
                             service:services(name, duration)
                         `)
                         .eq('employee_id', user.id)
-                        .order('booking_datetime', { ascending: activeTab === 'upcoming' });
+                        .order('booking_datetime', { ascending: activeTab === 'upcoming' || activeTab === 'pending' });
 
                     if (error) throw error;
                     bookingsQuery = data;
@@ -118,7 +118,11 @@ const MyBookings = () => {
 
     // Improved Logic: Fetch all, then filter.
     const now = new Date();
-    const upcomingEvents = events.filter(e => e.date >= now);
+    // In many booking systems, "pending" means status === 'pending', while upcoming means status might be 'confirmed'.
+    // We will separate by status. If status isn't reliable, we'll just consider all future events as upcoming for now,
+    // but separate 'pending' status.
+    const pendingEvents = events.filter(e => e.date >= now && e.status === 'pending');
+    const upcomingEvents = events.filter(e => e.date >= now && e.status !== 'pending');
     const pastEvents = events.filter(e => e.date < now).reverse(); // Most recent past first
     const scheduleEvents = events.filter(e => {
         return e.date.getFullYear() === selectedDate.getFullYear() &&
@@ -138,7 +142,7 @@ const MyBookings = () => {
         return d;
     });
 
-    const displayEvents = activeTab === 'upcoming' ? upcomingEvents : activeTab === 'past' ? pastEvents : scheduleEvents;
+    const displayEvents = activeTab === 'upcoming' ? upcomingEvents : activeTab === 'past' ? pastEvents : activeTab === 'pending' ? pendingEvents : scheduleEvents;
 
     if (loading) {
         return (
@@ -196,6 +200,16 @@ const MyBookings = () => {
                     >
                         <Calendar className="w-4 h-4" />
                         Upcoming
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('pending')}
+                        className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${activeTab === 'pending'
+                            ? 'bg-white dark:bg-[#2c2420] text-[#de5c1b] shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+                            }`}
+                    >
+                        <Clock className="w-4 h-4" />
+                        Pending
                     </button>
                     <button
                         onClick={() => setActiveTab('schedule')}
